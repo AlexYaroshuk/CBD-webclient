@@ -1,3 +1,6 @@
+import botSvg from "./assets/bot.svg";
+import humanSvg from "./assets/human.svg";
+
 document.addEventListener("DOMContentLoaded", () => {
   const conversationList = document.getElementById("conversation-list");
   const clearHistoryBtn = document.getElementById("clear-chatHistory-btn");
@@ -186,18 +189,18 @@ document.addEventListener("DOMContentLoaded", () => {
       : "";
 
     return `
-    <div class="wrapper ${aiClass} ${listItemClass}">
-      <div class="chat">
-        <div class="profile">
-          <img
-            src=${isAi ? "./assets/bot.svg" : "./assets/user.svg"}
-            alt="${isAi ? "bot" : "user"}"
-          />
-        </div>
-        <div class="message ${errorClass}" id=${uniqueId}>${icon}${value}</div> <!-- Add the error class here -->
+  <div class="wrapper ${aiClass} ${listItemClass}">
+    <div class="chat">
+      <div class="profile">
+        <img
+          src=${isAi ? botSvg : humanSvg}
+          alt="${isAi ? "bot" : "user"}"
+        />
       </div>
+      <div class="message ${errorClass}" id=${uniqueId}>${icon}${value}</div> <!-- Add the error class here -->
     </div>
-  `;
+  </div>
+`;
   }
 
   function conversationListItem(value, uniqueId) {
