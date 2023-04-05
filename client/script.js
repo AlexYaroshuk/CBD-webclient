@@ -1,5 +1,5 @@
 import botSvg from "./assets/bot.svg";
-import humanSvg from "./assets/human.svg";
+import userSvg from "./assets/user.svg";
 
 document.addEventListener("DOMContentLoaded", () => {
   const conversationList = document.getElementById("conversation-list");
@@ -193,7 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
     <div class="chat">
       <div class="profile">
         <img
-          src=${isAi ? botSvg : humanSvg}
+          src=${isAi ? botSvg : userSvg}
           alt="${isAi ? "bot" : "user"}"
         />
       </div>
