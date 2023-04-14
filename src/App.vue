@@ -1,11 +1,61 @@
 <template>
-  <nav>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/about">About</router-link>
-  </nav>
-  <router-view />
+  <div id="vue-app">
+    <!--     <nav>
+      <router-link to="/">Home</router-link> |
+      <router-link to="/about">About</router-link> |
+      <router-link v-if="isLoggedIn" to="/dashboard">Dashboard</router-link>
+    </nav> -->
+
+    <AuthDialog v-if="!isLoggedIn" @auth-success="handleAuthSuccess" />
+    <router-view :isLoggedIn="isLoggedIn" @logout-success="handleLogout" />
+  </div>
 </template>
 
+<script>
+import AuthDialog from "./components/AuthDialog.vue";
+import { getAuth, signOut } from "firebase/auth";
+import router from "./router";
+const auth = getAuth();
+export default {
+  components: {
+    AuthDialog,
+  },
+  data() {
+    return {
+      isLoggedIn: false,
+    };
+  },
+  mounted() {
+    auth.onAuthStateChanged((user) => {
+      console.log("Auth state changed:", user);
+      if (user) {
+        this.isLoggedIn = true;
+        router.push("/dashboard");
+      } else {
+        this.isLoggedIn = false;
+      }
+    });
+  },
+  methods: {
+    handleAuthSuccess() {
+      this.isLoggedIn = true;
+      // Store additional session information, such as location, logged-in date, IP, etc.
+      // ...
+    },
+
+    async signOut() {
+      try {
+        await auth.signOut();
+        this.isLoggedIn = false;
+        router.push("/");
+      } catch (error) {
+        console.error("Error signing out:", error);
+        alert("Failed to sign out. Please try again.");
+      }
+    },
+  },
+};
+</script>
 <style lang="scss">
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;

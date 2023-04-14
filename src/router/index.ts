@@ -1,5 +1,10 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
-import HomeView from "../views/HomeView.vue";
+import HomeView from '../views/HomeView.vue'
+import AboutView from '../views/AboutView.vue'
+import DashboardMain from "../components/DashboardMain.vue";
+
+import { auth } from "../firebase";
+
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -8,19 +13,47 @@ const routes: Array<RouteRecordRaw> = [
     component: HomeView,
   },
   {
-    path: "/about",
-    name: "about",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "about" */ "../views/AboutView.vue"),
+    path: "/auth",
+    name: "auth",
+    component: AboutView,
+    meta: {
+      requiresGuest: true
+    }
   },
+  {
+    path: "/dashboard",
+    name: "dashboard",
+    component: DashboardMain,
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    redirect: "/"
+  }
+
 ];
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
+  history: createWebHistory(),
   routes,
 });
+
+router.beforeEach((to, from, next) => {
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+  const requiresGuest = to.matched.some((record) => record.meta.requiresGuest);
+
+  const user = auth.currentUser;
+
+  if (requiresAuth && !user) {
+    next("/auth");
+  } else if (requiresGuest && user) {
+    next("/dashboard"); // Change this to '/dashboard'
+  } else {
+    next();
+  }
+});
+
 
 export default router;

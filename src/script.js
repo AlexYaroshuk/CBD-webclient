@@ -1,4 +1,17 @@
-document.addEventListener("DOMContentLoaded", () => {
+import {
+  collection,
+  doc,
+  onSnapshot,
+  query,
+  setDoc,
+  getDocs,
+  writeBatch,
+} from "firebase/firestore";
+
+import { database } from "./firebase"; // You already have this file
+import { auth } from "./firebase";
+
+export default function () {
   const conversationList = document.getElementById("conversation-list");
   const clearHistoryBtn = document.getElementById("clear-chatHistory-btn");
   const confirmationModal = document.getElementById("confirmation-modal");
@@ -61,25 +74,25 @@ document.addEventListener("DOMContentLoaded", () => {
   // Set the active conversation style
 
   function setActiveConversationStyle(conversationId) {
-    document.querySelectorAll(".conversation-list-item").forEach((item) => {
-      if (item.dataset.conversationId === conversationId) {
+    console.log("setActiveConversationStyle called with:", conversationId);
+    const allItems = document.querySelectorAll(".conversation-list-item");
+    allItems.forEach((item) => {
+      if (item.id === conversationId) {
         item.classList.add("active");
       } else {
         item.classList.remove("active");
       }
     });
-
-    const newChatBtn = document.getElementById("new-chat-btn");
-    if (conversationId === null) {
-      newChatBtn.classList.add("active");
-    } else {
-      newChatBtn.classList.remove("active");
-    }
-
-    // Add these lines to remove the 'active' class from the sidebar and hide the overlay
-    sidebar.classList.remove("active");
-    overlay.style.display = "none";
   }
+
+  document.querySelectorAll(".conversation-list-item").forEach((item) => {
+    item.addEventListener("click", () => {
+      const conversationId = item.id;
+      activeConversation = conversationId;
+
+      setActiveConversationStyle(conversationId);
+    });
+  });
 
   // ... other code
 
@@ -89,65 +102,66 @@ document.addEventListener("DOMContentLoaded", () => {
     items.forEach((item) => {
       item.addEventListener("click", (event) => {
         event.preventDefault();
-        setActiveConversationStyle(item.dataset.conversationId);
-        localStorage.setItem("activeConversation", item.dataset.conversationId);
+        const conversationId = item.id;
+        activeConversation = conversationId;
 
-        // Your logic for loading conversation content goes here
+        setActiveConversationStyle(conversationId);
+        localStorage.setItem("activeConversation", conversationId);
+
+        const activeConv = conversations.find(
+          (conv) => conv.id === activeConversation
+        );
+        if (activeConv) chatHistory = activeConv.messages || [];
+
+        renderChatHistory(); // This line was missing
+        updateStartMessageDisplay();
       });
     });
   }
 
   function loadActiveConversation() {
     if (activeConversation) {
-      const activeConvIndex = conversations.findIndex(
+      const conversation = conversations.find(
         (conv) => conv.id === activeConversation
       );
-      if (activeConvIndex >= 0) {
-        chatHistory = conversations[activeConvIndex].messages;
+      if (conversation) {
+        chatHistory = conversation.messages || [];
         renderChatHistory();
         updateStartMessageDisplay();
         setActiveConversationStyle(activeConversation);
-      }
-    }
-  }
-
-  try {
-    const storedConversations = localStorage.getItem("conversations");
-    if (storedConversations) {
-      const storedActiveConversation =
-        localStorage.getItem("activeConversation");
-      if (storedActiveConversation) {
-        activeConversation = storedActiveConversation;
       } else {
-        activeConversation = null;
-      }
-
-      if (storedConversations) {
-        conversations = JSON.parse(storedConversations);
-        renderConversationList();
-        setActiveConversationStyle(activeConversation);
-        const activeConvIndex = conversations.findIndex(
-          (conv) => conv.id === activeConversation
-        );
-        if (activeConvIndex >= 0) {
-          chatHistory = conversations[activeConvIndex].messages;
-          renderChatHistory();
-          updateStartMessageDisplay();
-        }
+        chatHistory = []; // Clear chat history
+        renderChatHistory(); // Render the empty chat history
+        updateStartMessageDisplay();
       }
     }
-  } catch (error) {
-    console.error(error);
   }
 
-  function loader(element) {
-    element.textContent = "";
-    loadInterval = setInterval(() => {
-      element.textContent += ".";
-      if (element.textContent === "....") {
-        element.textContent = "";
-      }
-    }, 300);
+  async function loadConversationsFromFirebase() {
+    const userUid = auth.currentUser.uid;
+    const conversationsRef = collection(
+      database,
+      `users/${userUid}/conversations`
+    );
+    const conversationsQuery = query(conversationsRef);
+
+    onSnapshot(conversationsQuery, (querySnapshot) => {
+      conversations = [];
+      querySnapshot.forEach((docSnapshot) => {
+        const data = docSnapshot.data();
+        const id = docSnapshot.id;
+        const conversation = { id, messages: [] }; // initialize messages array
+        if (data.messages) {
+          conversation.messages = data.messages;
+        }
+        conversations.push(conversation);
+      });
+
+      renderConversationList();
+      addConversationClickEventListeners();
+      setActiveConversationStyle(activeConversation);
+      loadActiveConversation();
+    });
   }
 
   function typeText(element, text) {
@@ -171,13 +185,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function chatStripe(
     isAi,
-    value,
+    message,
     uniqueId,
     isError = false,
     isConversationListItem = false
   ) {
     const aiClass = isAi ? "ai" : "";
-    const errorClass = isError ? "error" : ""; // Add an error class if isError is true
+    const errorClass = isError ? "error" : "";
     const listItemClass = isConversationListItem
       ? "conversation-list-item"
       : "";
@@ -186,17 +200,19 @@ document.addEventListener("DOMContentLoaded", () => {
       : "";
 
     return `
-  <div class="wrapper ${aiClass} ${listItemClass}">
-    <div class="chat">
-      <div class="profile">
-        <img
-          src=${isAi ? "../src/assets/bot.svg" : "../src/assets/user.svg"}
-          alt="${isAi ? "../src/assets/bot.svg" : "../src/assets/user.svg"}"
-        />
-      </div>
-      <div class="message ${errorClass}" id=${uniqueId}>${icon}${value}</div> <!-- Add the error class here -->
+<div class="wrapper ${aiClass} ${listItemClass}">
+  <div class="chat">
+    <div class="profile">
+      <img
+        src=${isAi ? "../src/assets/bot.svg" : "../src/assets/user.svg"}
+        alt="${isAi ? "../src/assets/bot.svg" : "../src/assets/user.svg"}"
+      />
     </div>
+    <div class="message ${errorClass}" id=${uniqueId}>${icon}${
+      message.content
+    }</div>
   </div>
+</div>
 `;
   }
 
@@ -210,60 +226,35 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderConversationList() {
+    const conversationList = document.getElementById("conversation-list");
     conversationList.innerHTML = "";
+    conversations.sort((a, b) => {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
 
-    if (conversations.length > 0) {
-      conversations.forEach((conversation, index) => {
-        const conversationTitle = conversation.messages[0]
-          ? conversation.messages[0].substring(6)
-          : "New Chat";
-        const conversationItem = document.createElement("div");
-        conversationItem.className = "conversation-list-item";
-        conversationItem.id = `conversation-${conversation.id}`;
-        conversationItem.innerHTML = `
-        <i class="material-icons">chat_bubble_outline</i>
-        <span class="text-content">${conversationTitle}</span>
-      `;
-        conversationItem.dataset.conversationId = conversation.id;
+    conversations.forEach((conversation, index) => {
+      const firstUserMessage = conversation.messages.find(
+        (message) => message.role === "user"
+      );
 
-        conversationList.appendChild(conversationItem);
+      // Display the content of the first user message
+      const conversationElement = conversationListItem(
+        firstUserMessage ? firstUserMessage.content : "",
+        conversation.id
+      );
+      conversationList.insertAdjacentHTML("beforeend", conversationElement);
+    });
 
-        if (conversation.id === activeConversation) {
-          conversationItem.classList.add("active");
-        } else {
-          conversationItem.classList.remove("active");
-        }
-
-        conversationItem.addEventListener("click", () => {
-          const conversationIndex = conversations.findIndex(
-            (conv) => conv.id === conversation.id
-          );
-          activeConversation = conversation.id;
-          chatHistory = conversations[conversationIndex].messages;
-          chatContainer.innerHTML = "";
-          renderChatHistory();
-          updateStartMessageDisplay();
-          setActiveConversationStyle(conversation.id);
-        });
-      });
-    }
-
-    if (conversations.length === 0) {
-      clearHistoryBtn.style.display = "none";
-    } else {
-      clearHistoryBtn.style.display = "flex";
-    }
-
-    // Add this line to call the function to add event listeners
     addConversationClickEventListeners();
   }
 
   function handleNewChatBtnClick() {
-    activeConversation = null;
-    chatHistory = [];
-    chatContainer.innerHTML = "";
+    activeConversation = null; // clear activeConversation
+    chatHistory = []; // clear chatHistory
+    localStorage.removeItem("activeConversation"); // clear activeConversation in local storage
+    chatContainer.innerHTML = ""; // clear chat container
     updateStartMessageDisplay();
-    setActiveConversationStyle(null); // Pass null to highlight the new-chat-btn
+    setActiveConversationStyle(activeConversation);
   }
 
   const newChatBtn = document.getElementById("new-chat-btn");
@@ -272,9 +263,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderChatHistory() {
     chatContainer.innerHTML = "";
     for (const message of chatHistory) {
-      const isAi = message.startsWith("AI:");
-      const value = message.substring(4);
-      chatContainer.innerHTML += chatStripe(isAi, value);
+      const isAi = message.role === "system";
+      chatContainer.innerHTML += chatStripe(
+        isAi,
+        message,
+        message.uniqueId || null
+      );
     }
   }
 
@@ -294,12 +288,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function updateLocalStorageAndRender() {
-    localStorage.setItem("conversations", JSON.stringify(conversations));
-    renderConversationList();
+  async function updateFirebaseAndRender() {
+    const userUid = auth.currentUser.uid;
+    const conversationsRef = collection(
+      database,
+      `users/${userUid}/conversations`
+    );
+
+    // Iterate through the conversations array and set each document in the Firestore
+    for (const conversation of conversations) {
+      const conversationDocRef = doc(conversationsRef, conversation.id);
+      await setDoc(conversationDocRef, { messages: conversation.messages });
+    }
   }
 
-  function fetchWithTimeout(url, options, timeout = 15000) {
+  function fetchWithTimeout(url, options, timeout = 25000) {
     return Promise.race([
       fetch(url, options),
       new Promise((_, reject) =>
@@ -308,10 +311,27 @@ document.addEventListener("DOMContentLoaded", () => {
     ]);
   }
 
+  function loader(element) {
+    element.textContent = "";
+    loadInterval = setInterval(() => {
+      element.textContent += ".";
+      if (element.textContent === "....") {
+        element.textContent = "";
+      }
+    }, 300);
+  }
+
   function timeout(ms) {
     return new Promise((_, reject) =>
       setTimeout(() => reject(new Error("Request took too long")), ms)
     );
+  }
+
+  function getActiveConversationMessages() {
+    const activeConv = conversations.find(
+      (conv) => conv.id === activeConversation
+    );
+    return activeConv ? activeConv.messages : [];
   }
 
   const handleSubmit = async (e) => {
@@ -324,8 +344,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return; // Do nothing if input is empty or only contains whitespace
     }
 
-    chatHistory.push(`User: ${userPrompt}`);
-    chatContainer.innerHTML += chatStripe(false, userPrompt);
+    chatHistory.push({ role: "user", content: userPrompt });
+    chatContainer.innerHTML += chatStripe(false, { content: userPrompt }, null);
 
     if (activeConversation === null) {
       const newConversation = {
@@ -334,25 +354,34 @@ document.addEventListener("DOMContentLoaded", () => {
       };
       activeConversation = newConversation.id;
       conversations.push(newConversation);
+      localStorage.setItem("activeConversation", activeConversation); // Set activeConversation in local storage
       updateStartMessageDisplay();
       renderConversationList();
     }
 
     form.reset();
-    localStorage.removeItem("activeConversation");
 
     const uniqueId = generateUniqueId();
     chatContainer.innerHTML += chatStripe(true, "", uniqueId);
+    const activeConv = conversations.find(
+      (conv) => conv.id === activeConversation
+    );
+    if (activeConv) activeConv.messages = chatHistory;
 
     // Update the conversation list item with the icon
     const listItem = document.getElementById(
       `conversation-${activeConversation}`
     );
     if (listItem) {
-      listItem.innerHTML = `
+      const textContent = listItem.querySelector(".text-content");
+      if (textContent) {
+        textContent.textContent = userPrompt;
+      } else {
+        listItem.innerHTML = `
     <i class="material-icons">chat_bubble_outline</i>
     <span class="text-content">${userPrompt}</span>
   `;
+      }
     }
 
     chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -361,7 +390,9 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       loader(messageDiv);
 
-      const FETCH_TIMEOUT = 15000; // 10 seconds
+      const FETCH_TIMEOUT = 25000; // 15 seconds
+
+      console.log(chatHistory);
 
       const response = await fetchWithTimeout(
         "https://chat-cbd.onrender.com",
@@ -370,8 +401,8 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: {
             "Content-Type": "application/json",
           },
+
           body: JSON.stringify({
-            prompt: userPrompt,
             chatHistory: chatHistory,
           }),
         },
@@ -384,8 +415,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (response.ok) {
         const data = await response.json();
         const parsedData = data.bot.trim();
-        chatHistory.push(`AI: ${parsedData}`);
-        typeText(messageDiv, parsedData);
+        chatHistory.push({ role: "system", content: parsedData });
 
         if (activeConversation === null) {
           const newConversation = {
@@ -409,20 +439,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 textContent.textContent = userPrompt;
               } else {
                 listItem.innerHTML = `
-        <i class="material-icons">chat_bubble_outline</i>
-        <span class="text-content">${userPrompt}</span>
-      `;
+    <i class="material-icons">chat_bubble_outline</i>
+    <span class="text-content">${userPrompt}</span>
+  `;
               }
             }
           }
         }
 
-        updateLocalStorageAndRender();
+        typeText(messageDiv, parsedData);
+        updateFirebaseAndRender();
       } else {
         const errorMessage = "An error occurred. Please try again.";
         messageDiv.innerHTML = errorMessage;
         messageDiv.classList.add("error"); // Add the 'error' class to the message
-        chatHistory.push(`AI: ${errorMessage}`);
+        chatHistory.push({ role: "system", content: errorMessage });
       }
     } catch (error) {
       clearInterval(loadInterval);
@@ -432,7 +463,7 @@ document.addEventListener("DOMContentLoaded", () => {
           : "An error occurred. Please try again.";
       messageDiv.innerHTML = errorMessage;
       messageDiv.classList.add("error"); // Add the 'error' class to the message
-      chatHistory.push(`AI: ${errorMessage}`);
+      chatHistory.push({ role: "system", content: errorMessage });
     }
   };
 
@@ -448,14 +479,33 @@ document.addEventListener("DOMContentLoaded", () => {
     confirmationModal.style.display = "block";
   });
 
-  confirmClearHistoryBtn.addEventListener("click", () => {
+  confirmClearHistoryBtn.addEventListener("click", async () => {
+    const userUid = auth.currentUser.uid;
+    const conversationsRef = collection(
+      database,
+      `users/${userUid}/conversations`
+    );
+
+    // Delete all documents in the user's conversations collection
+    const querySnapshot = await getDocs(conversationsRef);
+    const batch = writeBatch(database);
+    querySnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    // Reset the conversations array, activeConversation, and chatHistory
     conversations = [];
     activeConversation = null;
     chatHistory = [];
+
+    // Update the UI
     localStorage.removeItem("conversations");
     chatContainer.innerHTML = "";
     renderConversationList();
     updateStartMessageDisplay();
+
+    // Close the confirmation modal
     confirmationModal.style.display = "none";
   });
 
@@ -466,4 +516,5 @@ document.addEventListener("DOMContentLoaded", () => {
   updateStartMessageDisplay();
   setActiveConversationStyle(activeConversation);
   loadActiveConversation();
-});
+  loadConversationsFromFirebase();
+}

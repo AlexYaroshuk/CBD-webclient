@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "esnext",
+    "allowJs": true,
     "module": "esnext",
     "strict": true,
     "jsx": "preserve",
@@ -34,8 +35,9 @@
     "src/**/*.tsx",
     "src/**/*.vue",
     "tests/**/*.ts",
-    "tests/**/*.tsx"
-  ],
+    "tests/**/*.tsx",
+        "src/vite-env.d.ts"
+, "src/firebase.ts"  ],
   "exclude": [
     "node_modules"
   ]
