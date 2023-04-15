@@ -9,21 +9,25 @@
       }
     }
   ],
-  "routes": [
+  "headers": [
     {
-      "src": "^/[^./]+\\.[0-9a-f]{8}\\.js",
-      "headers": { "cache-control": "immutable" },
-      "continue": true
+      "source": "/src/(.*)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/src/(.*)",
+      "destination": "/src/$1"
     },
     {
-      "src": "/src/(.*)",
-      "headers": { "content-type": "application/javascript" },
-      "dest": "/src/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html",
-      "status": 200
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
