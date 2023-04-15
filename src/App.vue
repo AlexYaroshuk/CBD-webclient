@@ -38,6 +38,7 @@ export default {
   },
   methods: {
     handleAuthSuccess() {
+      console.log("run");
       this.isLoggedIn = true;
       // Store additional session information, such as location, logged-in date, IP, etc.
       // ...

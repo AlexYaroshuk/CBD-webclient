@@ -1,2 +1,3 @@
-import "../src/script.js";
+/* import "../src/script.js";
 require("dotenv").config();
+ */

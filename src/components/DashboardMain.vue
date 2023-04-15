@@ -96,11 +96,11 @@ import myScript from "../script.js";
 
 export default {
   name: "DashboardMain",
-  data() {
+  /*   data() {
     return {
       conversations: [],
     };
-  },
+  }, */
   props: {
     isLoggedIn: {
       type: Boolean,
