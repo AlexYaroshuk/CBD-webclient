@@ -204,8 +204,8 @@ export default function () {
   <div class="chat">
     <div class="profile">
       <img
-        src=${isAi ? "../src/assets/bot.svg" : "../src/assets/user.svg"}
-        alt="${isAi ? "../src/assets/bot.svg" : "../src/assets/user.svg"}"
+        src=${isAi ? "/src/assets/bot.svg" : "/src/assets/user.svg"}
+        alt="${isAi ? "/src/assets/bot.svg" : "/src/assets/user.svg"}"
       />
     </div>
     <div class="message ${errorClass}" id=${uniqueId}>${icon}${
