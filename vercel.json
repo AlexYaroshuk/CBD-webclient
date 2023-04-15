@@ -17,6 +17,7 @@
     },
     {
       "src": "/src/(.*)",
+      "headers": { "content-type": "application/javascript" },
       "dest": "/src/$1"
     },
     {
