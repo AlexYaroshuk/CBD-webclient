@@ -60,7 +60,7 @@
         </form>
         <div class="form-helper-text">
           <a href="https://github.com/AlexYaroshuk/CBD-webclient"
-            >chatCBD Apr 5 Version.</a
+            >chatCBD Apr 15 Version.</a
           >
           ChatCBD may produce inaccurate information about people, places, or
           facts
