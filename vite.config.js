@@ -4,7 +4,9 @@ import vue from "@vitejs/plugin-vue";
 export default defineConfig({
   plugins: [vue()],
   server: {
-    historyApiFallback: true,
+    historyApiFallback: {
+      rewrites: [{ from: /./, to: "/index.html" }],
+    },
     hot: true,
   },
   base: "/",
