@@ -1,12 +1,5 @@
 {
   "version": 2,
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html",
-      "status": 200
-    }
-  ],
   "builds": [
     {
       "src": "package.json",
@@ -14,6 +7,18 @@
       "config": {
         "distDir": "dist"
       }
+    }
+  ],
+  "routes": [
+    {
+      "src": "^/[^./]+\\.[0-9a-f]{8}\\.js",
+      "headers": { "cache-control": "immutable" },
+      "continue": true
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html",
+      "status": 200
     }
   ]
 }
