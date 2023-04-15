@@ -12,18 +12,14 @@
   ],
   "routes": [
     {
-      "src": "/(.*)",
-      "headers": { "cache-control": "public,max-age=0,must-revalidate" },
-      "continue": true
-    },
-    {
-      "src": "^/[^/]*\\.(js|txt|ico|json)$",
+      "src": "/(.*).(js|txt|ico|json)",
       "headers": { "cache-control": "public,max-age=0,must-revalidate" },
       "continue": true
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/index.html",
+      "headers": { "cache-control": "public,max-age=0,must-revalidate" }
     }
   ]
 }
