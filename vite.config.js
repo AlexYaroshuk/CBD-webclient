@@ -7,6 +7,10 @@ export default defineConfig({
     hot: true,
   },
   base: "/",
+  build: {
+    outDir: "dist",
+    assetsDir: "",
+  },
   root: ".",
   publicDir: "public",
 });

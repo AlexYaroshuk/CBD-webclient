@@ -1,10 +1,23 @@
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
   "routes": [
     {
       "src": "^/[^./]+\\.[0-9a-f]{8}\\.js",
       "headers": { "cache-control": "immutable" },
       "continue": true
+    },
+    {
+      "src": "/src/(.*)",
+      "dest": "/src/$1"
     },
     {
       "src": "/(.*)",
