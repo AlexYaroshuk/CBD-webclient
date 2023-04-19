@@ -261,8 +261,6 @@ form img {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-
-
   flex: auto;
 }
 
@@ -387,6 +385,32 @@ form img {
 
 }
 
+.action-btn-single {
+  margin-top: 8px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  text-overflow: ellipsis;
+  height: 40px;
+  flex-grow: 0;
+  flex-shrink: 1;
+  padding: 4px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  color: #dcdcdc;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  font-size: 16px;
+  transition: background-color 0.3s;
+  background-color: #40414F
+}
+
+.action-btn-single i {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
 .action-btn:disabled {
 
   color: #888;
@@ -396,6 +420,10 @@ form img {
 .action-btn i {
   margin-right: 8px;
   font-size: 16px;
+}
+
+.action-btn-single:not(:disabled):hover {
+  background-color: #202123
 }
 
 .action-btn:not(:disabled):hover {
