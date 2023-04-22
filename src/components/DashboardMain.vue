@@ -23,7 +23,6 @@
               v-for="(conversation, index) in conversations"
               :key="index"
               class="conversation-list-item"
-              @click="handleConversationClick(index)"
             >
               <i class="material-icons">chat_bubble_outline</i>
               {{
@@ -48,6 +47,10 @@
       <div class="mainview">
         <div id="chat_container"></div>
         <div id="start-message" class="start-message">chatCBD</div>
+        <div class="image-switch">
+          <input type="checkbox" id="image-switch-input" />
+          <label for="image-switch-input">Image</label>
+        </div>
         <button
           id="regenerate-response-btn"
           class="action-btn-single"
@@ -170,8 +173,9 @@ export default {
 
       const form = document.getElementById("chat-form");
       const promptInput = document.querySelector('textarea[name="prompt"]');
-      const submitBtn = document.getElementById("submit-btn");
       const newChatBtn = document.getElementById("new-chat-btn");
+
+      const imageSwitchInput = document.getElementById("image-switch-input");
 
       promptInput.addEventListener("keydown", (e) => {
         if (e.keyCode === 13) {
@@ -200,21 +204,35 @@ export default {
 
       let loadInterval;
 
+      let isImage = false;
+
+      imageSwitchInput.addEventListener("change", (e) => {
+        isImage = e.target.checked;
+      });
+
       // Get activeConversation from local storage
       let activeConversation = localStorage.getItem("activeConversation");
 
       // Set the active conversation style
 
       function setActiveConversationStyle(conversationId) {
-        console.log("setActiveConversationStyle called with:", conversationId);
-        const allItems = document.querySelectorAll(".conversation-list-item");
-        allItems.forEach((item) => {
-          if (item.id === conversationId) {
-            item.classList.add("active");
-          } else {
-            item.classList.remove("active");
-          }
-        });
+        if (conversationId) {
+          const allItems = document.querySelectorAll(".conversation-list-item");
+          sidebar.classList.remove("active"); // Remove the 'active' class from the sidebar
+          overlay.style.display = "none";
+          console.log(
+            "🚀 ~ file: DashboardMain.vue:236 ~ item.addEventListener ~ none:"
+          );
+          allItems.forEach((item) => {
+            if (item.id === conversationId) {
+              item.classList.add("active");
+            } else {
+              item.classList.remove("active");
+            }
+          });
+        } else {
+          console.log("No conversation id given.");
+        }
       }
 
       document.querySelectorAll(".conversation-list-item").forEach((item) => {
@@ -329,6 +347,7 @@ export default {
         isAi,
         message,
         uniqueId,
+        isImage = false,
         isError = false,
         isConversationListItem = false
       ) {
@@ -341,6 +360,13 @@ export default {
           ? `<i class="material-icons">chat_bubble_outline</i>`
           : "";
 
+        const content = isImage
+          ? `<div class="image-loader-container">
+         <div class="image-loader"></div>
+         <img class="response-image" src="${message.content}" style="display:none;" onload="this.style.display='block'; this.previousElementSibling.style.display='none';" />
+       </div>`
+          : message.content;
+
         return `
 <div class="wrapper ${aiClass} ${listItemClass}">
   <div class="chat">
@@ -350,9 +376,7 @@ export default {
         alt="${isAi ? "../src/assets/bot.svg" : "../src/assets/user.svg"}"
       />
     </div>
-    <div class="message ${errorClass}" id=${uniqueId}>${icon}${
-          message.content
-        }</div>
+    <div class="message ${errorClass}" id=${uniqueId}>${icon}${content}</div>
   </div>
 </div>
 `;
@@ -404,10 +428,12 @@ export default {
         chatContainer.innerHTML = "";
         for (const message of chatHistory) {
           const isAi = message.role === "system";
+          const isImage = message.isImage;
           chatContainer.innerHTML += chatStripe(
             isAi,
             message,
-            message.uniqueId || null
+            message.uniqueId || null,
+            isImage
           );
         }
       }
@@ -451,6 +477,14 @@ export default {
         ]);
       }
 
+      function showImageLoader(messageDiv) {
+        messageDiv.innerHTML = `
+    <div class="image-loader-container">
+      <div class="image-loader"></div>
+    </div>
+  `;
+      }
+
       function loader(element) {
         element.textContent = "";
         loadInterval = setInterval(() => {
@@ -465,8 +499,10 @@ export default {
         (conv) => conv.id === activeConversation
       );
 
-      const handleSubmit = async (e, resubmit = false) => {
+      async function handleSubmit(e, resubmit = false) {
         if (e) e.preventDefault();
+
+        const imageSwitch = document.getElementById("image-switch-input");
 
         const userPrompt = {
           role: "user",
@@ -517,7 +553,32 @@ export default {
         form.reset();
 
         const uniqueId = generateUniqueId();
-        chatContainer.innerHTML += chatStripe(true, "", uniqueId);
+
+        const isImage = document.getElementById("image-switch-input").checked;
+
+        // Create a new message element
+        const newMessage = document.createElement("div");
+        if (isImage) {
+          newMessage.innerHTML = `
+      <div class="wrapper ai">
+        <div class="chat">
+          <div class="profile">
+            <img src="../src/assets/bot.svg" alt="../src/assets/bot.svg" />
+          </div>
+          
+            <div class="image-loader-container">
+              <div class="image-loader"></div>
+              <div class="message" id=${uniqueId}>
+            </div>
+          </div>
+        </div>
+      </div>`;
+        } else {
+          newMessage.innerHTML = chatStripe(true, { content: "" }, uniqueId);
+        }
+
+        // Append the new message element to the chatContainer
+        chatContainer.appendChild(newMessage);
 
         if (activeConv) activeConv.messages = chatHistory;
 
@@ -551,7 +612,7 @@ export default {
             "none";
 
           const response = await fetchWithTimeout(
-            "https://chat-cbd.onrender.com/send-message",
+            "https://chat-cbd-server-test.onrender.com/send-message",
             {
               method: "POST",
               headers: {
@@ -559,6 +620,7 @@ export default {
               },
               body: JSON.stringify({
                 messages: chatHistory,
+                isImage: isImage,
               }),
             },
             FETCH_TIMEOUT
@@ -570,8 +632,30 @@ export default {
           if (response.ok) {
             const data = await response.json();
             const parsedData = data.bot.trim();
+            const isImage = data.isImage;
 
-            chatHistory.push({ role: "system", content: parsedData });
+            if (isImage) {
+              // Remove the image loader container
+              messageDiv.innerHTML = "";
+
+              // Wait for the image to load and then replace the loader with the image
+              const img = new Image();
+              img.src = parsedData;
+              img.alt = "Generated Image";
+              img.style.maxWidth = "100%"; // Optional: Set a max width for the image
+              img.onload = () => {
+                messageDiv.appendChild(img);
+              };
+            } else {
+              messageDiv.innerHTML = "";
+              typeText(messageDiv, parsedData);
+            }
+
+            chatHistory.push({
+              role: "system",
+              content: parsedData,
+              isImage: isImage,
+            });
 
             if (activeConversation === null) {
               const newConversation = {
@@ -605,7 +689,6 @@ export default {
             document.getElementById("regenerate-response-btn").style.display =
               "block";
 
-            typeText(messageDiv, parsedData);
             updateFirebaseAndRender();
           } else {
             const errorMessage = "An error occurred. Please try again.";
@@ -634,8 +717,7 @@ export default {
             "block";
           lastPrompt = sanitizedPrompt;
         }
-        console.log(lastPrompt);
-      };
+      }
 
       form.onsubmit = handleSubmit;
 
@@ -687,5 +769,49 @@ export default {
 </script>
 
 <style>
-/* your styles here */
+.image-switch {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0.5rem 1rem;
+}
+
+.image-switch label {
+  margin-left: 0.5rem;
+  cursor: pointer;
+}
+
+.image-loader-container {
+  display: flex;
+  position: relative;
+  width: 256px;
+  /* Adjust the width of the bounding box as needed */
+  height: 256px;
+  /* Adjust the height of the bounding box as needed */
+  background-color: #f0f0f0;
+  /* Optional: Set a background color for the bounding box */
+  border-radius: 4px;
+  overflow: hidden;
+  /* Optional: Set a border radius for the bounding box */
+}
+
+.image-loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  margin-left: -20px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #000;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
 </style>

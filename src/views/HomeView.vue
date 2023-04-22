@@ -1,7 +1,7 @@
 <template>
   <div class="home">
     <img alt="Vue logo" src="/assets/logo.png" />
-    <AuthDialogVue msg="Welcome to Your Vue.js + TypeScript App" />
+    <AuthDialog msg="Welcome to Your Vue.js + TypeScript App" />
   </div>
 </template>
 

@@ -33,6 +33,7 @@ export default {
         router.push("/dashboard");
       } else {
         this.isLoggedIn = false;
+        router.push("/auth");
       }
     });
   },
