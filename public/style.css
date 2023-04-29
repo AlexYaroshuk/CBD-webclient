@@ -366,14 +366,14 @@ form img {
 }
 
 .action-btn {
-  text-align: left;
+  text-align: center;
   display: flex;
   align-items: center;
   text-overflow: ellipsis;
   height: 40px;
   flex-grow: 0;
   flex-shrink: 1;
-  padding: 4px;
+  padding: 0.25rem 0.5rem;
   border-radius: 4px;
   margin-bottom: 4px;
   color: #dcdcdc;
@@ -387,14 +387,14 @@ form img {
 
 .action-btn-single {
   margin-top: 8px;
-  text-align: left;
+  text-align: center;
   display: flex;
   align-items: center;
   text-overflow: ellipsis;
   height: 40px;
   flex-grow: 0;
   flex-shrink: 1;
-  padding: 4px;
+  padding: 0.25rem 0.5rem;
   border-radius: 4px;
   margin-bottom: 4px;
   color: #dcdcdc;

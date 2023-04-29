@@ -47,17 +47,24 @@
       <div class="mainview">
         <div id="chat_container"></div>
         <div id="start-message" class="start-message">chatCBD</div>
-        <div class="image-switch">
-          <input type="checkbox" id="image-switch-input" />
-          <label for="image-switch-input">Image</label>
+
+        <div>
+          <button
+            id="regenerate-response-btn"
+            class="action-btn-single"
+            style="display: none"
+          >
+            <i class="material-icons">autorenew</i>Regenerate response
+          </button>
+          <div class="tab-container">
+            <div id="text-tab" class="tab active">
+              <i class="material-icons">text_format</i>Text
+            </div>
+            <div id="image-tab" class="tab">
+              <i class="material-icons">image</i>Image
+            </div>
+          </div>
         </div>
-        <button
-          id="regenerate-response-btn"
-          class="action-btn-single"
-          style="display: none"
-        >
-          <i class="material-icons">autorenew</i>Regenerate response
-        </button>
 
         <form id="chat-form">
           <textarea
@@ -113,8 +120,9 @@ import {
   writeBatch,
 } from "firebase/firestore";
 
-import { database } from "../firebase"; // You already have this file
-import { auth } from "../firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { auth, database, storage } from "../firebase";
+
 import { escape } from "lodash";
 
 export default {
@@ -134,27 +142,32 @@ export default {
   mounted() {
     this.myFunction();
   },
+
   methods: {
     signOut() {
       this.$root.signOut();
     },
 
-    handlePromptInput() {
+    handlePromptInput(shouldDisableButton) {
       const promptInput = document.querySelector('textarea[name="prompt"]');
       const submitBtn = document.getElementById("submit-btn");
       promptInput.addEventListener("input", () => {
-        if (promptInput.value.trim() === "") {
-          submitBtn.disabled = true;
-        } else {
-          submitBtn.disabled = false;
-        }
+        submitBtn.disabled = shouldDisableButton(promptInput.value);
       });
     },
 
     myFunction() {
-      //declare consts
+      //declare vars
 
-      this.handlePromptInput();
+      let isPendingResponse = false;
+
+      const shouldDisableButton = (inputValue) => {
+        return inputValue.trim() === "" || isPendingResponse;
+      };
+
+      // Pass the shouldDisableButton callback function to handlePromptInput
+      this.handlePromptInput(shouldDisableButton);
+
       const conversationList = document.getElementById("conversation-list");
       const clearHistoryBtn = document.getElementById("clear-chatHistory-btn");
       const confirmationModal = document.getElementById("confirmation-modal");
@@ -185,7 +198,6 @@ export default {
 
       form.addEventListener("submit", (e) => {
         e.preventDefault();
-        // your submit code here
       });
 
       drawerBtn.addEventListener("click", () => {
@@ -206,8 +218,21 @@ export default {
 
       let isImage = false;
 
-      imageSwitchInput.addEventListener("change", (e) => {
-        isImage = e.target.checked;
+      const textTab = document.getElementById("text-tab");
+      const imageTab = document.getElementById("image-tab");
+
+      textTab.addEventListener("click", () => {
+        isImage = false;
+        textTab.classList.add("active");
+        imageTab.classList.remove("active");
+        promptInput.placeholder = "Type your message";
+      });
+
+      imageTab.addEventListener("click", () => {
+        isImage = true;
+        textTab.classList.remove("active");
+        imageTab.classList.add("active");
+        promptInput.placeholder = "Type your image description";
       });
 
       // Get activeConversation from local storage
@@ -220,9 +245,7 @@ export default {
           const allItems = document.querySelectorAll(".conversation-list-item");
           sidebar.classList.remove("active"); // Remove the 'active' class from the sidebar
           overlay.style.display = "none";
-          console.log(
-            "🚀 ~ file: DashboardMain.vue:236 ~ item.addEventListener ~ none:"
-          );
+
           allItems.forEach((item) => {
             if (item.id === conversationId) {
               item.classList.add("active");
@@ -230,8 +253,6 @@ export default {
               item.classList.remove("active");
             }
           });
-        } else {
-          console.log("No conversation id given.");
         }
       }
 
@@ -273,7 +294,7 @@ export default {
             );
             if (activeConv) chatHistory = activeConv.messages || [];
 
-            renderChatHistory(); // This line was missing
+            renderChatHistory();
             updateStartMessageDisplay();
           });
         });
@@ -290,8 +311,8 @@ export default {
             updateStartMessageDisplay();
             setActiveConversationStyle(activeConversation);
           } else {
-            chatHistory = []; // Clear chat history
-            renderChatHistory(); // Render the empty chat history
+            chatHistory = [];
+            renderChatHistory();
             updateStartMessageDisplay();
           }
         }
@@ -305,23 +326,30 @@ export default {
         );
         const conversationsQuery = query(conversationsRef);
 
-        onSnapshot(conversationsQuery, (querySnapshot) => {
-          conversations = [];
-          querySnapshot.forEach((docSnapshot) => {
-            const data = docSnapshot.data();
-            const id = docSnapshot.id;
-            const conversation = { id, messages: [] }; // initialize messages array
-            if (data.messages) {
-              conversation.messages = data.messages;
-            }
-            conversations.push(conversation);
-          });
+        // Use getDocs() instead of onSnapshot()
+        const querySnapshot = await getDocs(conversationsQuery);
+        querySnapshot.forEach((docSnapshot) => {
+          const data = docSnapshot.data();
+          const id = docSnapshot.id;
+          const conversation = { id, messages: [] };
+          if (data.messages) {
+            conversation.messages = data.messages;
+          }
 
-          renderConversationList();
-          addConversationClickEventListeners();
-          setActiveConversationStyle(activeConversation);
-          loadActiveConversation();
+          const existingConvIndex = conversations.findIndex(
+            (conv) => conv.id === id
+          );
+          if (existingConvIndex >= 0) {
+            conversations[existingConvIndex] = conversation;
+          } else {
+            conversations.push(conversation);
+          }
         });
+
+        renderConversationList();
+        addConversationClickEventListeners();
+        setActiveConversationStyle(activeConversation);
+        loadActiveConversation();
       }
 
       function typeText(element, text) {
@@ -333,7 +361,7 @@ export default {
           } else {
             clearInterval(interval);
           }
-        }, 1);
+        }, 2);
       }
 
       function generateUniqueId() {
@@ -347,24 +375,32 @@ export default {
         isAi,
         message,
         uniqueId,
-        isImage = false,
-        isError = false,
-        isConversationListItem = false
+        isConversationListItem = false,
+        isError = false
       ) {
         const aiClass = isAi ? "ai" : "";
         const errorClass = isError ? "error" : "";
-        const listItemClass = isConversationListItem
-          ? "conversation-list-item"
-          : "";
-        const icon = isConversationListItem
-          ? `<i class="material-icons">chat_bubble_outline</i>`
-          : "";
+        const listItemClass =
+          isConversationListItem && message.type !== "image"
+            ? "conversation-list-item"
+            : "";
+        const icon =
+          isConversationListItem && message.type !== "image"
+            ? `<i class="material-icons">chat_bubble_outline</i>`
+            : "";
 
-        const content = isImage
-          ? `<div class="image-loader-container">
-         <div class="image-loader"></div>
-         <img class="response-image" src="${message.content}" style="display:none;" onload="this.style.display='block'; this.previousElementSibling.style.display='none';" />
-       </div>`
+        const hasImages =
+          message.images !== undefined && message.images.length > 0;
+
+        const content = hasImages
+          ? message.images
+              .map((imageUrl, index) => {
+                return `<div class="image-loader-container">
+  <div class="image-loader"></div>
+  <img class="response-image" id="response-image-${uniqueId}-${index}" src="" data-src="${imageUrl}" style="display:none;" width="256" height="256" />
+</div>`;
+              })
+              .join("")
           : message.content;
 
         return `
@@ -389,6 +425,37 @@ export default {
       ${value}
     </div>
   `;
+      }
+
+      function generateImageElements(images) {
+        return images
+          .map((imageUrl, index) => {
+            return `<div class="image-loader-container">
+        <div class="image-loader"></div>
+        <img class="response-image" id="response-image-${index}" src="" data-src="${imageUrl}" style="display:none;" width="256" height="256" />
+      </div>`;
+          })
+          .join("");
+      }
+
+      function handleImageLoad(imageUrl, imgElement) {
+        const loader = imgElement.parentElement.querySelector(".image-loader");
+        if (loader) {
+          loader.classList.add("active");
+        }
+
+        imgElement.addEventListener("load", () => {
+          imgElement.style.display = "block";
+          if (loader) {
+            loader.classList.remove("active");
+          }
+        });
+
+        const cachedImage = new Image();
+        cachedImage.src = imageUrl;
+        cachedImage.onload = () => {
+          imgElement.src = imageUrl;
+        };
       }
 
       function renderConversationList() {
@@ -426,15 +493,35 @@ export default {
 
       function renderChatHistory() {
         chatContainer.innerHTML = "";
+        let messageIdCounter = 0;
         for (const message of chatHistory) {
           const isAi = message.role === "system";
-          const isImage = message.isImage;
-          chatContainer.innerHTML += chatStripe(
+          const isImage = message.type === "image";
+          const uniqueId = message.uniqueId || `message-${messageIdCounter}`;
+          messageIdCounter++;
+          const messageElement = chatStripe(
             isAi,
             message,
-            message.uniqueId || null,
+            uniqueId,
+            false,
             isImage
           );
+
+          chatContainer.insertAdjacentHTML("beforeend", messageElement);
+          if (isImage && message.images) {
+            message.images.forEach((imageUrl, index) => {
+              const imgElement = document.getElementById(
+                `response-image-${uniqueId}-${index}`
+              );
+              if (imgElement) {
+                handleImageLoad(imageUrl, imgElement);
+              } else {
+                console.error(
+                  `Image element with ID response-image-${uniqueId}-${index} not found`
+                );
+              }
+            });
+          }
         }
       }
 
@@ -454,35 +541,13 @@ export default {
         }
       }
 
-      async function updateFirebaseAndRender() {
-        const userUid = auth.currentUser.uid;
-        const conversationsRef = collection(
-          database,
-          `users/${userUid}/conversations`
-        );
-
-        // Iterate through the conversations array and set each document in the Firestore
-        for (const conversation of conversations) {
-          const conversationDocRef = doc(conversationsRef, conversation.id);
-          await setDoc(conversationDocRef, { messages: conversation.messages });
-        }
-      }
-
-      function fetchWithTimeout(url, options, timeout = 25000) {
+      function fetchWithTimeout(url, options, timeout = 35000) {
         return Promise.race([
           fetch(url, options),
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error("Request timed out")), timeout)
           ),
         ]);
-      }
-
-      function showImageLoader(messageDiv) {
-        messageDiv.innerHTML = `
-    <div class="image-loader-container">
-      <div class="image-loader"></div>
-    </div>
-  `;
       }
 
       function loader(element) {
@@ -495,20 +560,43 @@ export default {
         }, 300);
       }
 
-      const activeConv = conversations.find(
+      var activeConv = conversations.find(
         (conv) => conv.id === activeConversation
       );
+
+      function preprocessChatHistory(messages) {
+        return messages.map((message) => {
+          // Check if the message is an image
+          const isImage = message.type === "image";
+
+          // Only return the role and content properties of each message
+          return {
+            role: message.role,
+            content: isImage ? "generated image" : message.content,
+          };
+        });
+      }
+
+      function renderUserMessage(message, uniqueId) {
+        const userMessageHtml = chatStripe(false, message, uniqueId);
+        chatContainer.insertAdjacentHTML("beforeend", userMessageHtml);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
 
       async function handleSubmit(e, resubmit = false) {
         if (e) e.preventDefault();
 
-        const imageSwitch = document.getElementById("image-switch-input");
+        const submitBtn = document.getElementById("submit-btn");
+        submitBtn.disabled = true; // Disable the submit button
+        isPendingResponse = true; // Set isPendingResponse to true
 
         const userPrompt = {
           role: "user",
           content: escape(promptInput.value),
+          type: "text",
         };
 
+        const uniqueId = generateUniqueId();
         lastPrompt = userPrompt.content;
 
         if (!userPrompt.content.trim()) {
@@ -523,27 +611,19 @@ export default {
             activeConv.messages.pop();
           }
         } else {
+          renderUserMessage(userPrompt, uniqueId);
           chatHistory.push(userPrompt);
         }
 
         renderChatHistory();
 
-        const sanitizedPrompt = escape(userPrompt);
-
-        const isResubmittedPrompt = sanitizedPrompt === lastPrompt;
-        if (isResubmittedPrompt) {
-          chatHistory.pop();
-          if (activeConv) {
-            activeConv.messages.pop();
-          }
-        }
-
         if (activeConversation === null) {
           const newConversation = {
             id: generateUniqueId(),
-            messages: chatHistory,
+            messages: [...chatHistory],
           };
           activeConversation = newConversation.id;
+          activeConv = newConversation; // Add this line to update the activeConv object
           conversations.push(newConversation);
           localStorage.setItem("activeConversation", activeConversation); // Set activeConversation in local storage
           updateStartMessageDisplay();
@@ -552,35 +632,27 @@ export default {
 
         form.reset();
 
-        const uniqueId = generateUniqueId();
-
-        const isImage = document.getElementById("image-switch-input").checked;
-
         // Create a new message element
         const newMessage = document.createElement("div");
         if (isImage) {
           newMessage.innerHTML = `
-      <div class="wrapper ai">
-        <div class="chat">
-          <div class="profile">
-            <img src="../src/assets/bot.svg" alt="../src/assets/bot.svg" />
-          </div>
-          
-            <div class="image-loader-container">
-              <div class="image-loader"></div>
-              <div class="message" id=${uniqueId}>
-            </div>
-          </div>
+    <div class="wrapper ai">
+      <div class="chat">
+        <div class="profile">
+          <img src="../src/assets/bot.svg" alt="../src/assets/bot.svg" />
         </div>
-      </div>`;
+        <div class="image-loader-container">
+          <div class="image-loader"></div>
+          <div class="message" id=${uniqueId}></div>
+        </div>
+      </div>
+    </div>`;
         } else {
           newMessage.innerHTML = chatStripe(true, { content: "" }, uniqueId);
         }
 
         // Append the new message element to the chatContainer
         chatContainer.appendChild(newMessage);
-
-        if (activeConv) activeConv.messages = chatHistory;
 
         // Update the conversation list item with the icon
         const listItem = document.getElementById(
@@ -589,14 +661,17 @@ export default {
         if (listItem) {
           const textContent = listItem.querySelector(".text-content");
           if (textContent) {
-            textContent.textContent = sanitizedPrompt;
+            textContent.textContent = userPrompt.content;
           } else {
             listItem.innerHTML = `
         <i class="material-icons">chat_bubble_outline</i>
-        <span class="text-content">${sanitizedPrompt}</span>
+        <span class="text-content">${userPrompt.content}</span>
       `;
           }
         }
+        if (activeConv) activeConv.messages = [...chatHistory];
+
+        const userUid = auth.currentUser.uid;
 
         chatContainer.scrollTop = chatContainer.scrollHeight;
 
@@ -604,10 +679,7 @@ export default {
         try {
           loader(messageDiv);
 
-          const FETCH_TIMEOUT = 15000; // 15 seconds
-
-          console.log(chatHistory);
-
+          const FETCH_TIMEOUT = 35000;
           document.getElementById("regenerate-response-btn").style.display =
             "none";
 
@@ -620,42 +692,48 @@ export default {
               },
               body: JSON.stringify({
                 messages: chatHistory,
-                isImage: isImage,
+                type: isImage ? "image" : "text",
+                activeConversation: activeConversation,
+                userId: userUid,
               }),
             },
+
             FETCH_TIMEOUT
           );
 
           clearInterval(loadInterval);
           messageDiv.innerHTML = "";
 
-          if (response.ok) {
+          if (response.status === 200) {
             const data = await response.json();
             const parsedData = data.bot.trim();
-            const isImage = data.isImage;
 
-            if (isImage) {
-              // Remove the image loader container
-              messageDiv.innerHTML = "";
+            const receivedType = data.type;
 
-              // Wait for the image to load and then replace the loader with the image
-              const img = new Image();
-              img.src = parsedData;
-              img.alt = "Generated Image";
-              img.style.maxWidth = "100%"; // Optional: Set a max width for the image
-              img.onload = () => {
-                messageDiv.appendChild(img);
-              };
+            let receivedContent;
+            if (receivedType === "image") {
+              receivedContent = data.images;
+              messageDiv.innerHTML = generateImageElements(receivedContent);
+              receivedContent.forEach((imageUrl, index) => {
+                const imgElement = document.getElementById(
+                  `response-image-${index}`
+                );
+                handleImageLoad(imageUrl, imgElement);
+              });
             } else {
+              receivedContent = data.bot.trim();
               messageDiv.innerHTML = "";
               typeText(messageDiv, parsedData);
             }
 
-            chatHistory.push({
+            const receivedMessage = {
               role: "system",
-              content: parsedData,
-              isImage: isImage,
-            });
+              content: receivedContent,
+              type: receivedType,
+              uniqueId: uniqueId,
+            };
+
+            chatHistory.push(receivedMessage);
 
             if (activeConversation === null) {
               const newConversation = {
@@ -676,11 +754,11 @@ export default {
                 if (listItem) {
                   const textContent = listItem.querySelector(".text-content");
                   if (textContent) {
-                    textContent.textContent = sanitizedPrompt;
+                    textContent.textContent = userPrompt.content;
                   } else {
                     listItem.innerHTML = `
                 <i class="material-icons">chat_bubble_outline</i>
-                <span class="text-content">${sanitizedPrompt}</span>
+                <span class="text-content">${userPrompt.content}</span>
               `;
                   }
                 }
@@ -688,10 +766,16 @@ export default {
             }
             document.getElementById("regenerate-response-btn").style.display =
               "block";
-
-            updateFirebaseAndRender();
           } else {
-            const errorMessage = "An error occurred. Please try again.";
+            const errorData = await response.json(); // Get the error data from the response
+            let errorMessage =
+              errorData.error || "An error occurred. Please try again.";
+
+            if (response.status === 429) {
+              errorMessage =
+                "Rate limit exceeded. Please try again in 20 seconds.";
+            }
+
             messageDiv.innerHTML = errorMessage;
             messageDiv.classList.add("error"); // Add the 'error' class to the message
             chatHistory.push({ role: "system", content: errorMessage });
@@ -703,7 +787,7 @@ export default {
           const errorMessage =
             error.message === "Request timed out"
               ? "Request timed out. Please try again."
-              : "An error occurred. Please try again.";
+              : "An error #1 occurred. Please try again.";
           messageDiv.innerHTML = errorMessage;
           messageDiv.classList.add("error"); // Add the 'error' class to the message
 
@@ -715,7 +799,14 @@ export default {
 
           document.getElementById("regenerate-response-btn").style.display =
             "block";
-          lastPrompt = sanitizedPrompt;
+          lastPrompt = userPrompt.content;
+        } finally {
+          isPendingResponse = false;
+          if (!promptInput.value.trim()) {
+            submitBtn.disabled = true;
+          } else {
+            submitBtn.disabled = false;
+          }
         }
       }
 
@@ -768,20 +859,36 @@ export default {
 };
 </script>
 
-<style>
-.image-switch {
+<style scoped>
+.tab-container {
   display: flex;
-  align-items: center;
   justify-content: flex-end;
-  margin: 0.5rem 1rem;
+  margin: 0.25rem 0.5rem;
 }
 
-.image-switch label {
-  margin-left: 0.5rem;
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  margin: 0.5rem;
   cursor: pointer;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: border-color 0.1s;
+  background-color: #949494;
+  color: #101011;
+}
+.tab:hover {
+  background-color: #b9b9b9;
+}
+
+.tab.active {
+  background-color: #4fefff;
 }
 
 .image-loader-container {
+  border-radius: 8px;
   display: flex;
   position: relative;
   width: 256px;
@@ -790,7 +897,7 @@ export default {
   /* Adjust the height of the bounding box as needed */
   background-color: #f0f0f0;
   /* Optional: Set a background color for the bounding box */
-  border-radius: 4px;
+
   overflow: hidden;
   /* Optional: Set a border radius for the bounding box */
 }
@@ -813,5 +920,15 @@ export default {
   100% {
     transform: rotate(360deg);
   }
+}
+
+.response-image {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 </style>
