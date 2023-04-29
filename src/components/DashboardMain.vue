@@ -320,29 +320,55 @@ export default {
 
       async function loadConversationsFromFirebase() {
         const userUid = auth.currentUser.uid;
+
         const conversationsRef = collection(
           database,
           `users/${userUid}/conversations`
         );
+
         const conversationsQuery = query(conversationsRef);
+
+        console.log("🚀userUid:", userUid);
+        console.log("🚀conversationsRef:", conversationsRef);
+        console.log("🚀conversationsQuery:", conversationsQuery);
 
         // Use getDocs() instead of onSnapshot()
         const querySnapshot = await getDocs(conversationsQuery);
         querySnapshot.forEach((docSnapshot) => {
           const data = docSnapshot.data();
+          console.log(
+            "🚀 ~ file: DashboardMain.vue:341 ~ querySnapshot.forEach ~ data:",
+            data
+          );
           const id = docSnapshot.id;
           const conversation = { id, messages: [] };
+          console.log(
+            "🚀 ~ file: DashboardMain.vue:343 ~ querySnapshot.forEach ~ id:",
+            id
+          );
           if (data.messages) {
             conversation.messages = data.messages;
           }
+          console.log(
+            "🚀 ~ file: DashboardMain.vue:346 ~ querySnapshot.forEach ~ conversation:",
+            conversation
+          );
 
           const existingConvIndex = conversations.findIndex(
             (conv) => conv.id === id
+          );
+          console.log(
+            "🚀 ~ file: DashboardMain.vue:354 ~ querySnapshot.forEach ~ existingConvIndex:",
+            existingConvIndex
           );
           if (existingConvIndex >= 0) {
             conversations[existingConvIndex] = conversation;
           } else {
             conversations.push(conversation);
+            console.log(
+              "🚀 ~ file: DashboardMain.vue:359 ~ querySnapshot.forEach ~ conversation:",
+              conversation
+            );
           }
         });
 
