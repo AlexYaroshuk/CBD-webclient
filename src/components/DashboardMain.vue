@@ -884,7 +884,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 .tab-container {
   display: flex;
   justify-content: flex-end;
