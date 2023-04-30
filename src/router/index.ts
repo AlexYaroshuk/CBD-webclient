@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import HomeView from '../views/HomeView.vue'
-import AboutView from '../views/AboutView.vue'
+import AuthView from '../views/AuthView.vue'
 import ChatView from "../views/ChatView.vue";
 
 import { auth } from "../firebase";
@@ -15,7 +15,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/auth",
     name: "auth",
-    component: AboutView,
+    component: AuthView,
     meta: {
       requiresGuest: true
     }

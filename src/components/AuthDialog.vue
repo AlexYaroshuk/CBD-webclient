@@ -70,7 +70,6 @@ export default {
       const initialConversationRef = doc(userConversationsRef);
       const initialData = {
         id: initialConversationRef.id,
-        prompt: "",
         messages: [],
       };
 
