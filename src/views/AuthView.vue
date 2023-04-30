@@ -2,7 +2,6 @@
   <div class="about">
     Welcome to chatCBD
     <AuthDialog />
-    <p>(dev server)</p>
   </div>
 </template>
 <script>
