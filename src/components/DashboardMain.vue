@@ -319,63 +319,73 @@ export default {
       }
 
       async function loadConversationsFromFirebase() {
-        const userUid = auth.currentUser.uid;
+        try {
+          const userUid = auth.currentUser.uid;
 
-        const conversationsRef = collection(
-          database,
-          `users/${userUid}/conversations`
-        );
-
-        const conversationsQuery = query(conversationsRef);
-
-        console.log("🚀userUid:", userUid);
-        console.log("🚀conversationsRef:", conversationsRef);
-        console.log("🚀conversationsQuery:", conversationsQuery);
-
-        // Use getDocs() instead of onSnapshot()
-        const querySnapshot = await getDocs(conversationsQuery);
-        querySnapshot.forEach((docSnapshot) => {
-          const data = docSnapshot.data();
-          console.log(
-            "🚀 ~ file: DashboardMain.vue:341 ~ querySnapshot.forEach ~ data:",
-            data
-          );
-          const id = docSnapshot.id;
-          const conversation = { id, messages: [] };
-          console.log(
-            "🚀 ~ file: DashboardMain.vue:343 ~ querySnapshot.forEach ~ id:",
-            id
-          );
-          if (data.messages) {
-            conversation.messages = data.messages;
-          }
-          console.log(
-            "🚀 ~ file: DashboardMain.vue:346 ~ querySnapshot.forEach ~ conversation:",
-            conversation
+          const conversationsRef = collection(
+            database,
+            `users/${userUid}/conversations`
           );
 
-          const existingConvIndex = conversations.findIndex(
-            (conv) => conv.id === id
-          );
-          console.log(
-            "🚀 ~ file: DashboardMain.vue:354 ~ querySnapshot.forEach ~ existingConvIndex:",
-            existingConvIndex
-          );
-          if (existingConvIndex >= 0) {
-            conversations[existingConvIndex] = conversation;
-          } else {
-            conversations.push(conversation);
-            console.log(
-              "🚀 ~ file: DashboardMain.vue:359 ~ querySnapshot.forEach ~ conversation:",
-              conversation
+          const conversationsQuery = query(conversationsRef);
+
+          // Use getDocs() instead of onSnapshot()
+          const querySnapshot = await getDocs(conversationsQuery);
+          querySnapshot.forEach((docSnapshot) => {
+            const data = docSnapshot.data();
+            const id = docSnapshot.id;
+            const conversation = { id, messages: [] };
+            if (data.messages) {
+              conversation.messages = data.messages;
+            }
+
+            const existingConvIndex = conversations.findIndex(
+              (conv) => conv.id === id
             );
-          }
+
+            if (existingConvIndex >= 0) {
+              conversations[existingConvIndex] = conversation;
+            } else {
+              conversations.push(conversation);
+              console.log(
+                "🚀 ~ file: DashboardMain.vue:359 ~ querySnapshot.forEach ~ conversation:",
+                conversation
+              );
+            }
+          });
+
+          renderConversationList();
+          addConversationClickEventListeners();
+          setActiveConversationStyle(activeConversation);
+          loadActiveConversation();
+        } catch (error) {
+          console.error("Error loading conversations:", error);
+          showConversationListFetchError(error.message);
+        }
+      }
+
+      function showConversationListFetchError(message) {
+        const errorDiv = document.createElement("div");
+        errorDiv.id = "error-div";
+
+        const errorMsg = document.createElement("p");
+        errorMsg.textContent = `Error: ${message}`;
+        errorDiv.appendChild(errorMsg);
+
+        const retryBtn = document.createElement("button");
+        retryBtn.id = "retry-btn";
+        retryBtn.textContent = "Retry";
+        errorDiv.appendChild(retryBtn);
+
+        retryBtn.addEventListener("click", () => {
+          errorDiv.remove();
+          loadConversationsFromFirebase();
         });
 
-        renderConversationList();
-        addConversationClickEventListeners();
-        setActiveConversationStyle(activeConversation);
-        loadActiveConversation();
+        const conversationListWrapper = document.querySelector(
+          ".conversation-list-wrapper"
+        );
+        conversationListWrapper.appendChild(errorDiv);
       }
 
       function typeText(element, text) {
@@ -956,5 +966,28 @@ export default {
   position: absolute;
   top: 0;
   left: 0;
+}
+
+#error-div {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+#retry-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+#retry-btn:hover {
+  background-color: #0056b3;
 }
 </style>
