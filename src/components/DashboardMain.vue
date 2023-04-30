@@ -600,19 +600,6 @@ export default {
         (conv) => conv.id === activeConversation
       );
 
-      function preprocessChatHistory(messages) {
-        return messages.map((message) => {
-          // Check if the message is an image
-          const isImage = message.type === "image";
-
-          // Only return the role and content properties of each message
-          return {
-            role: message.role,
-            content: isImage ? "generated image" : message.content,
-          };
-        });
-      }
-
       function renderUserMessage(message, uniqueId) {
         const userMessageHtml = chatStripe(false, message, uniqueId);
         chatContainer.insertAdjacentHTML("beforeend", userMessageHtml);
@@ -713,7 +700,9 @@ export default {
 
         const messageDiv = document.getElementById(uniqueId);
         try {
-          loader(messageDiv);
+          if (!isImage) {
+            loader(messageDiv);
+          }
 
           const FETCH_TIMEOUT = 35000;
           document.getElementById("regenerate-response-btn").style.display =
