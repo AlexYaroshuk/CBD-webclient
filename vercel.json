@@ -20,41 +20,21 @@
       ]
     },
     {
-      "source": "/assets/(.*).svg",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "image/svg+xml"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
       "source": "/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "https://chat-cbd.vercel.app/" },
+        { "key": "Access-Control-Allow-Origin", "value": "myapp" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
       ]
     }
   ],
- "rewrites": [
+  "rewrites": [
     {
       "source": "/src/(.*)",
       "destination": "/src/$1"
     },
     {
       "source": "/(.*)",
-      "has": [
-        {
-          "type": "header",
-          "key": "accept",
-          "value": "(text/html|application/xhtml+xml)"
-        }
-      ],
       "destination": "/index.html"
     }
   ]
