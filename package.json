@@ -1,4 +1,17 @@
 {
+  "name": "cbd-webclient",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "vercel-build": "vite build",
+    "test:unit": "vue-cli-service test:unit",
+    "test:e2e": "vue-cli-service test:e2e",
+    "lint": "vue-cli-service lint"
+  },
+
   "dependencies": {
     "core-js": "^3.8.3",
     "dompurify": "^3.0.2",
