@@ -10,9 +10,6 @@
     "vue-router": "^4.0.3",
     "vuex": "^4.0.0"
   },
-  "scripts": {
-  "vercel-build": "vite build"
-},
   "devDependencies": {
     "@types/jest": "^27.0.1",
     "@typescript-eslint/eslint-plugin": "^5.4.0",
