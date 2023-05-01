@@ -10,9 +10,6 @@ export default defineConfig({
   build: {
     outDir: "dist",
     assetsDir: "",
-    rollupOptions: {
-      input: "public/assets",
-    },
   },
   root: ".",
   publicDir: "public",
