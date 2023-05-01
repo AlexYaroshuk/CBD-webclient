@@ -62,7 +62,6 @@ export default {
 
   methods: {
     async createUserConversations(userId) {
-      console.log(`Creating conversations for user ${userId}`); // Add this line
       const userConversationsRef = collection(
         database,
         `users/${userId}/conversations`
@@ -128,7 +127,6 @@ export default {
         const userDocSnapshot = await getDoc(userDocRef);
 
         if (!userDocSnapshot.exists()) {
-          console.log("Creating user document..."); // Add this line
           await setDoc(userDocRef, { phone: this.phoneNumber });
 
           // Create the initial conversation for the new user

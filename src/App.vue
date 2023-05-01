@@ -27,7 +27,6 @@ export default {
   },
   mounted() {
     auth.onAuthStateChanged((user) => {
-      console.log("Auth state changed:", user);
       if (user) {
         this.isLoggedIn = true;
         router.push("/dashboard");
@@ -39,7 +38,6 @@ export default {
   },
   methods: {
     handleAuthSuccess() {
-      console.log("run");
       this.isLoggedIn = true;
       // Store additional session information, such as location, logged-in date, IP, etc.
       // ...

@@ -347,10 +347,6 @@ export default {
               conversations[existingConvIndex] = conversation;
             } else {
               conversations.push(conversation);
-              console.log(
-                "🚀 ~ file: DashboardMain.vue:359 ~ querySnapshot.forEach ~ conversation:",
-                conversation
-              );
             }
           });
 
