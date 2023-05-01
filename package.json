@@ -11,8 +11,8 @@
     "vuex": "^4.0.0"
   },
   "scripts": {
-    "postbuild": "copyfiles -u 1 public/assets/**/* dist/assets"
-  },
+  "vercel-build": "vite build"
+},
   "devDependencies": {
     "@types/jest": "^27.0.1",
     "@typescript-eslint/eslint-plugin": "^5.4.0",
@@ -41,7 +41,6 @@
     "sass-loader": "^12.0.0",
     "ts-jest": "^27.0.4",
     "typescript": "~4.5.5",
-    "vite": "^4.2.1",
-    "vite-plugin-copy": "^0.1.6"
+    "vite": "^4.2.1"
   }
 }
