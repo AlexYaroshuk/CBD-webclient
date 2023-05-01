@@ -1,6 +1,6 @@
 <template>
   <div class="about">
-    Welcome to chatCBD
+    Welcome to chatCBD beta
     <AuthDialog />
   </div>
 </template>
