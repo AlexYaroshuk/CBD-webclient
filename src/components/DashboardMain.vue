@@ -444,8 +444,8 @@ export default {
   <div class="chat">
     <div class="profile">
       <img
-        src=${isAi ? "../public/assets/bot.svg" : "../public/assets/user.svg"}
-        alt="${isAi ? "../public/assets/bot.svg" : "../public/assets/user.svg"}"
+        src=${isAi ? "/assets/bot.svg" : "/assets/user.svg"}
+        alt="${isAi ? "/assets/bot.svg" : "/assets/user.svg"}"
       />
     </div>
     <div class="message ${errorClass}" id=${uniqueId}>${icon}${content}</div>
@@ -662,7 +662,7 @@ export default {
     <div class="wrapper ai">
       <div class="chat">
         <div class="profile">
-          <img src="../public/assets/bot.svg" alt="../public/assets/bot.svg" />
+          <img src="/assets/bot.svg" alt="/assets/bot.svg" />
         </div>
         <div class="image-loader-container">
           <div class="image-loader"></div>
