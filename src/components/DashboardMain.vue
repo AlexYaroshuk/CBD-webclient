@@ -716,7 +716,7 @@ export default {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                messages: chatHistory,
+                userPrompt: userPrompt,
                 type: isImage ? "image" : "text",
                 activeConversation: activeConversation,
                 userId: userUid,
