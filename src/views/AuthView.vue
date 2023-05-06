@@ -1,6 +1,7 @@
 <template>
   <div class="about">
-    Welcome to chatCBD beta
+    Welcome to chatCBD beta. This service is currently in early development, so
+    get ready for bugs
     <AuthDialog />
   </div>
 </template>

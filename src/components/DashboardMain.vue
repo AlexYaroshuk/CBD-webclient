@@ -81,7 +81,10 @@
             >chatCBD Apr 30 Version.</a
           >
           ChatCBD may produce inaccurate information about people, places, or
-          facts
+          facts.
+        </div>
+        <div class="form-helper-text-hl">
+          This service is currently in early development, so get ready for bugs.
         </div>
       </div>
     </div>
