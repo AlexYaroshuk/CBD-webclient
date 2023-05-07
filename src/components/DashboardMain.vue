@@ -485,8 +485,8 @@ export default {
       />
     </div>
     <div class="message ${errorClass}" id=${uniqueId}>${icon}${content}</div>
-    <div class="chat-controls copy-btn"  data-id="${uniqueId}>
-      <i class="material-icons">content_copy</i>
+    <div class="chat-controls">
+      <i class="material-icons copy-btn" data-id="${uniqueId}">content_copy</i>
     </div>
   </div>
 </div>
