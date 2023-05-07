@@ -210,6 +210,17 @@ export default {
         overlay.style.display = "none"; // Hide the overlay
       });
 
+      document.addEventListener("DOMContentLoaded", () => {
+        const copyTextBtns = document.querySelectorAll(".copy-btn");
+
+        copyTextBtns.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const uniqueId = btn.getAttribute("data-id");
+            copyMessageToClipboard(uniqueId);
+          });
+        });
+      });
+
       let chatHistory = [];
       let conversations = [];
       let lastPrompt = "";
@@ -239,6 +250,28 @@ export default {
       let activeConversation = localStorage.getItem("activeConversation");
 
       // Set the active conversation style
+
+      async function copyMessageToClipboard(uniqueId) {
+        const messageDiv = document.getElementById(uniqueId);
+        const content = messageDiv.textContent;
+
+        // Copy the content to the clipboard
+        try {
+          await navigator.clipboard.writeText(content);
+        } catch (err) {
+          console.error("Failed to copy text: ", err);
+        }
+
+        // Change the icon to a checkmark
+        const chatControls =
+          messageDiv.parentNode.querySelector(".chat-controls i");
+        chatControls.textContent = "check";
+
+        // Revert the icon back to 'content_copy' after 3 seconds
+        setTimeout(() => {
+          chatControls.textContent = "content_copy";
+        }, 3000);
+      }
 
       function setActiveConversationStyle(conversationId) {
         if (conversationId) {
@@ -449,6 +482,9 @@ export default {
       />
     </div>
     <div class="message ${errorClass}" id=${uniqueId}>${icon}${content}</div>
+    <div class="chat-controls">
+      <i class="material-icons copy-btn" data-id="${uniqueId}">content_copy</i>
+    </div>
   </div>
 </div>
 `;
@@ -527,6 +563,17 @@ export default {
 
       newChatBtn.addEventListener("click", handleNewChatBtnClick);
 
+      function addCopyEventListeners() {
+        const copyTextBtns = document.querySelectorAll(".copy-btn");
+
+        copyTextBtns.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const uniqueId = btn.getAttribute("data-id");
+            copyMessageToClipboard(uniqueId);
+          });
+        });
+      }
+
       function renderChatHistory() {
         chatContainer.innerHTML = "";
         let messageIdCounter = 0;
@@ -544,6 +591,10 @@ export default {
           );
 
           chatContainer.insertAdjacentHTML("beforeend", messageElement);
+
+          // Add the event listeners after inserting the message element
+          addCopyEventListeners();
+
           if (isImage && message.images) {
             message.images.forEach((imageUrl, index) => {
               const imgElement = document.getElementById(
