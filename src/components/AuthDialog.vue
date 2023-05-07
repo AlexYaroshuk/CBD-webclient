@@ -1,33 +1,46 @@
 <template>
   <div id="auth-container">
-    <h1>Sign In / Sign Up</h1>
+    <h2 style="padding: 1rem">Enter your phone number to login or sign up</h2>
     <form @submit.prevent="submitForm">
-      <label for="phone">Phone number:</label>
-      <input
-        type="tel"
-        id="phone"
-        name="phone"
-        v-model="phoneNumber"
-        required
-      />
-      <div id="recaptcha-container"></div>
-      <button type="button" @click="sendCode">Send verification code</button>
-
-      <div v-if="showCodeInput">
-        <label for="code">Verification code:</label>
-        <input
-          type="text"
-          id="code"
-          name="code"
-          v-model="verificationCode"
-          required
-        />
-        <button type="submit">Verify</button>
+      <div style="width: 100%; flex-direction: column; padding: 1rem">
+        <div>
+          <input
+            style="width: 100%"
+            type="tel"
+            id="phone"
+            name="phone"
+            v-model="phoneNumber"
+            placeholder="Phone number w/ country code"
+            required
+          />
+        </div>
+        <div>
+          <input
+            v-if="showCodeInput"
+            type="text"
+            id="code"
+            name="code"
+            v-model="verificationCode"
+            required
+            placeholder="Verification code"
+          />
+          <div class="tab-container">
+            <div>
+              <button class="tab" type="submit" :disabled="sendingCode">
+                <i v-if="!sendingCode" class="material-icons">{{
+                  buttonIcon
+                }}</i>
+                <i v-else class="material-icons spin">autorenew</i>
+                {{ buttonLabel }}
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="recaptcha-container"></div>
       </div>
     </form>
   </div>
 </template>
-
 <script>
 import {
   collection,
@@ -57,7 +70,17 @@ export default {
       showCodeInput: false,
       confirmationResult: null,
       appVerifier: null,
+      sendingCode: false,
     };
+  },
+
+  computed: {
+    buttonLabel() {
+      return this.showCodeInput ? "Verify" : "Send verification code";
+    },
+    buttonIcon() {
+      return this.showCodeInput ? "check" : "send";
+    },
   },
 
   methods: {
@@ -80,6 +103,8 @@ export default {
         alert("Please enter a valid phone number.");
         return;
       }
+
+      this.sendingCode = true;
 
       if (!this.appVerifier) {
         this.appVerifier = new RecaptchaVerifier(
@@ -107,37 +132,45 @@ export default {
         this.appVerifier
           .render()
           .then((widgetId) => this.appVerifier.grecaptcha.reset(widgetId));
+      } finally {
+        this.sendingCode = false;
       }
     },
 
     async submitForm() {
-      if (!this.verificationCode) {
-        alert("Please enter the verification code.");
-        return;
-      }
-
-      try {
-        const result = await this.confirmationResult.confirm(
-          this.verificationCode
-        );
-        const user = result.user;
-
-        // Check if the user document exists
-        const userDocRef = doc(database, "users", user.uid);
-        const userDocSnapshot = await getDoc(userDocRef);
-
-        if (!userDocSnapshot.exists()) {
-          await setDoc(userDocRef, { phone: this.phoneNumber });
-
-          // Create the initial conversation for the new user
-          await this.createUserConversations(user.uid);
+      if (!this.showCodeInput) {
+        // Send verification code
+        await this.sendCode();
+      } else {
+        // Verify the code
+        if (!this.verificationCode) {
+          alert("Please enter the verification code.");
+          return;
         }
 
-        // Emit an event to the parent component
-        this.$emit("auth-success", user);
-      } catch (error) {
-        console.error("Error signing in:", error);
-        alert("Failed to sign in. Please try again.");
+        try {
+          const result = await this.confirmationResult.confirm(
+            this.verificationCode
+          );
+          const user = result.user;
+
+          // Check if the user document exists
+          const userDocRef = doc(database, "users", user.uid);
+          const userDocSnapshot = await getDoc(userDocRef);
+
+          if (!userDocSnapshot.exists()) {
+            await setDoc(userDocRef, { phone: this.phoneNumber });
+
+            // Create the initial conversation for the new user
+            await this.createUserConversations(user.uid);
+          }
+
+          // Emit an event to the parent component
+          this.$emit("auth-success", user);
+        } catch (error) {
+          console.error("Error signing in:", error);
+          alert("Failed to sign in. Please try again.");
+        }
       }
     },
   },
@@ -166,5 +199,36 @@ export default {
   padding: 20px;
   border-radius: 5px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.tab-container {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0.25rem 0.5rem;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  margin: 0.5rem;
+  cursor: pointer;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: border-color 0.1s;
+  background-color: #4fefff;
+  color: #101011;
+}
+.tab:hover {
+  background-color: #b9b9b9;
+}
+
+.gray-placeholder::placeholder {
+  color: gray;
+}
+
+.tab.active {
+  background-color: #4fefff;
 }
 </style>

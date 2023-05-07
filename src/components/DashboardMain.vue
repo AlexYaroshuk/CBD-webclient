@@ -78,7 +78,7 @@
         </form>
         <div class="form-helper-text">
           <a href="https://github.com/AlexYaroshuk/CBD-webclient"
-            >chatCBD Apr 30 Version.</a
+            >chatCBD May 7 Version.</a
           >
           ChatCBD may produce inaccurate information about people, places, or
           facts.
@@ -476,8 +476,8 @@ export default {
   <div class="chat">
     <div class="profile">
       <img
-        src=${isAi ? "../src/assets/bot.svg" : "../src/assets/user.svg"}
-        alt="${isAi ? "../src/assets/bot.svg" : "../src/assets/user.svg"}"
+        src=${isAi ? "/assets/bot.svg" : "/assets/user.svg"}
+        alt="${isAi ? "/assets/bot.svg" : "/assets/user.svg"}"
       />
     </div>
     <div class="message ${errorClass}" id=${uniqueId}>${icon}${content}</div>
@@ -690,19 +690,6 @@ export default {
 
         renderChatHistory();
 
-        if (activeConversation === null) {
-          const newConversation = {
-            id: generateUniqueId(),
-            messages: [...chatHistory],
-          };
-          activeConversation = newConversation.id;
-          activeConv = newConversation; // Add this line to update the activeConv object
-          conversations.push(newConversation);
-          localStorage.setItem("activeConversation", activeConversation); // Set activeConversation in local storage
-          updateStartMessageDisplay();
-          renderConversationList();
-        }
-
         form.reset();
 
         // Create a new message element
@@ -713,7 +700,7 @@ export default {
       <div class="chat">
         <div class="profile">
           <img src="/assets/bot.svg" alt="/assets/bot.svg" />
-          <img src="../src/assets/bot.svg" alt="../src/assets/bot.svg" />
+          <img src="/assets/bot.svg" alt="/assets/bot.svg" />
         </div>
         <div class="image-loader-container">
           <div class="image-loader"></div>

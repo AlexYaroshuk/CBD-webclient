@@ -47,7 +47,7 @@ export default {
       try {
         await auth.signOut();
         this.isLoggedIn = false;
-        router.push("/");
+        router.push("/auth");
       } catch (error) {
         console.error("Error signing out:", error);
         alert("Failed to sign out. Please try again.");
