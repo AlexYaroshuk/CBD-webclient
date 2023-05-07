@@ -759,35 +759,27 @@ export default {
 
             chatHistory.push(receivedMessage);
 
-            if (activeConversation === null) {
-              const newConversation = {
-                id: generateUniqueId(),
-                messages: chatHistory,
-              };
-              activeConversation = newConversation.id;
-              conversations.push(newConversation);
-            } else {
-              // Update the conversation list item with the icon
-              const convIndex = conversations.findIndex(
-                (conv) => conv.id === activeConversation
+            // Update the conversation list item with the icon
+            const convIndex = conversations.findIndex(
+              (conv) => conv.id === activeConversation
+            );
+            if (convIndex >= 0) {
+              const listItem = document.getElementById(
+                `conversation-${activeConversation}`
               );
-              if (convIndex >= 0) {
-                const listItem = document.getElementById(
-                  `conversation-${activeConversation}`
-                );
-                if (listItem) {
-                  const textContent = listItem.querySelector(".text-content");
-                  if (textContent) {
-                    textContent.textContent = userPrompt.content;
-                  } else {
-                    listItem.innerHTML = `
+              if (listItem) {
+                const textContent = listItem.querySelector(".text-content");
+                if (textContent) {
+                  textContent.textContent = userPrompt.content;
+                } else {
+                  listItem.innerHTML = `
                 <i class="material-icons">chat_bubble_outline</i>
                 <span class="text-content">${userPrompt.content}</span>
               `;
-                  }
                 }
               }
             }
+
             document.getElementById("regenerate-response-btn").style.display =
               "block";
           } else {
