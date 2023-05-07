@@ -696,6 +696,19 @@ export default {
 
         form.reset();
 
+        if (activeConversation === null) {
+          const newConversation = {
+            id: generateUniqueId(),
+            messages: [...chatHistory],
+          };
+          activeConversation = newConversation.id;
+          activeConv = newConversation; // Add this line to update the activeConv object
+          conversations.push(newConversation);
+          localStorage.setItem("activeConversation", activeConversation); // Set activeConversation in local storage
+          updateStartMessageDisplay();
+          renderConversationList();
+        }
+
         // Create a new message element
         const newMessage = document.createElement("div");
         if (isImage) {
