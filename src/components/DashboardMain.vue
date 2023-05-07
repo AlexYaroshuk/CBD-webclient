@@ -85,7 +85,7 @@
         </div>
         <div class="form-helper-text-hl">
           This service is currently in early development, so get ready for bugs.
-      </div>
+        </div>
       </div>
     </div>
 
@@ -694,19 +694,6 @@ export default {
 
         renderChatHistory();
 
-        if (activeConversation === null) {
-          const newConversation = {
-            id: generateUniqueId(),
-            messages: [...chatHistory],
-          };
-          activeConversation = newConversation.id;
-          activeConv = newConversation; // Add this line to update the activeConv object
-          conversations.push(newConversation);
-          localStorage.setItem("activeConversation", activeConversation); // Set activeConversation in local storage
-          updateStartMessageDisplay();
-          renderConversationList();
-        }
-
         form.reset();
 
         // Create a new message element
@@ -763,7 +750,7 @@ export default {
             "none";
 
           const response = await fetchWithTimeout(
-            "https://chat-cbd-server-test.onrender.com/send-message",
+            "https://chat-cbd-server.onrender.com/send-message",
             {
               method: "POST",
               headers: {
