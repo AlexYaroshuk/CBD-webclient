@@ -750,7 +750,7 @@ export default {
             "none";
 
           const response = await fetchWithTimeout(
-            "https://chat-cbd-server.onrender.com/send-message",
+            "https://chat-cbd.onrender.com/send-message",
             {
               method: "POST",
               headers: {
