@@ -189,6 +189,9 @@ form img {
   margin-bottom: 4px;
   cursor: pointer;
   font-size: 14px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .conversation-list-item .text-content {
