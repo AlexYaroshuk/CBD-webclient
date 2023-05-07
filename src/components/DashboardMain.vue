@@ -85,7 +85,7 @@
         </div>
         <div class="form-helper-text-hl">
           This service is currently in early development, so get ready for bugs.
-        </div>
+      </div>
       </div>
     </div>
 
@@ -383,6 +383,10 @@ export default {
               conversations[existingConvIndex] = conversation;
             } else {
               conversations.push(conversation);
+              console.log(
+                "🚀 ~ file: DashboardMain.vue:359 ~ querySnapshot.forEach ~ conversation:",
+                conversation
+              );
             }
           });
 
@@ -690,6 +694,19 @@ export default {
 
         renderChatHistory();
 
+        if (activeConversation === null) {
+          const newConversation = {
+            id: generateUniqueId(),
+            messages: [...chatHistory],
+          };
+          activeConversation = newConversation.id;
+          activeConv = newConversation; // Add this line to update the activeConv object
+          conversations.push(newConversation);
+          localStorage.setItem("activeConversation", activeConversation); // Set activeConversation in local storage
+          updateStartMessageDisplay();
+          renderConversationList();
+        }
+
         form.reset();
 
         // Create a new message element
@@ -699,7 +716,6 @@ export default {
     <div class="wrapper ai">
       <div class="chat">
         <div class="profile">
-          <img src="/assets/bot.svg" alt="/assets/bot.svg" />
           <img src="/assets/bot.svg" alt="/assets/bot.svg" />
         </div>
         <div class="image-loader-container">
@@ -747,7 +763,7 @@ export default {
             "none";
 
           const response = await fetchWithTimeout(
-            "https://chat-cbd.onrender.com/send-message",
+            "https://chat-cbd-server-test.onrender.com/send-message",
             {
               method: "POST",
               headers: {

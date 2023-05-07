@@ -219,10 +219,9 @@ form img {
 } */
 
 .header {
-  position: absolute;
+  position: relative;
   padding: 8px;
   display: none;
-  background-color: #343541;
 }
 
 .drawer-btn {
