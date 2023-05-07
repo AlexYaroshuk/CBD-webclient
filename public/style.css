@@ -111,6 +111,21 @@ a {
   scrollbar-width: none;
 }
 
+.chat-controls {
+  padding: 8px;
+  transition: background-color 0.3s;
+  transition: color 0.3s;
+  cursor: pointer;
+}
+
+.chat-controls i {
+  color: #dcdcdc96;
+  font-size: 16px;
+}
+.chat-controls:hover {
+  background-color: #353740;
+}
+
 .message.error {
   color: #d85656;
 

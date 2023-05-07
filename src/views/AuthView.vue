@@ -3,6 +3,9 @@
     Welcome to chatCBD beta. This service is currently in early development, so
     get ready for bugs
     <AuthDialog />
+    Welcome to chatCBD
+    <AuthDialog />
+    <p>(dev server)</p>
   </div>
 </template>
 <script>

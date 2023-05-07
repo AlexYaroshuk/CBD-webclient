@@ -213,6 +213,17 @@ export default {
         overlay.style.display = "none"; // Hide the overlay
       });
 
+      document.addEventListener("DOMContentLoaded", () => {
+        const copyTextBtns = document.querySelectorAll(".copy-btn");
+
+        copyTextBtns.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const uniqueId = btn.getAttribute("data-id");
+            copyMessageToClipboard(uniqueId);
+          });
+        });
+      });
+
       let chatHistory = [];
       let conversations = [];
       let lastPrompt = "";
@@ -242,6 +253,28 @@ export default {
       let activeConversation = localStorage.getItem("activeConversation");
 
       // Set the active conversation style
+
+      async function copyMessageToClipboard(uniqueId) {
+        const messageDiv = document.getElementById(uniqueId);
+        const content = messageDiv.textContent;
+
+        // Copy the content to the clipboard
+        try {
+          await navigator.clipboard.writeText(content);
+        } catch (err) {
+          console.error("Failed to copy text: ", err);
+        }
+
+        // Change the icon to a checkmark
+        const chatControls =
+          messageDiv.parentNode.querySelector(".chat-controls i");
+        chatControls.textContent = "check";
+
+        // Revert the icon back to 'content_copy' after 3 seconds
+        setTimeout(() => {
+          chatControls.textContent = "content_copy";
+        }, 3000);
+      }
 
       function setActiveConversationStyle(conversationId) {
         if (conversationId) {
@@ -443,11 +476,14 @@ export default {
   <div class="chat">
     <div class="profile">
       <img
-        src=${isAi ? "/assets/bot.svg" : "/assets/user.svg"}
-        alt="${isAi ? "/assets/bot.svg" : "/assets/user.svg"}"
+        src=${isAi ? "../src/assets/bot.svg" : "../src/assets/user.svg"}
+        alt="${isAi ? "../src/assets/bot.svg" : "../src/assets/user.svg"}"
       />
     </div>
     <div class="message ${errorClass}" id=${uniqueId}>${icon}${content}</div>
+    <div class="chat-controls">
+      <i class="material-icons copy-btn" data-id="${uniqueId}">content_copy</i>
+    </div>
   </div>
 </div>
 `;
@@ -526,6 +562,17 @@ export default {
 
       newChatBtn.addEventListener("click", handleNewChatBtnClick);
 
+      function addCopyEventListeners() {
+        const copyTextBtns = document.querySelectorAll(".copy-btn");
+
+        copyTextBtns.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const uniqueId = btn.getAttribute("data-id");
+            copyMessageToClipboard(uniqueId);
+          });
+        });
+      }
+
       function renderChatHistory() {
         chatContainer.innerHTML = "";
         let messageIdCounter = 0;
@@ -543,6 +590,10 @@ export default {
           );
 
           chatContainer.insertAdjacentHTML("beforeend", messageElement);
+
+          // Add the event listeners after inserting the message element
+          addCopyEventListeners();
+
           if (isImage && message.images) {
             message.images.forEach((imageUrl, index) => {
               const imgElement = document.getElementById(
@@ -662,6 +713,7 @@ export default {
       <div class="chat">
         <div class="profile">
           <img src="/assets/bot.svg" alt="/assets/bot.svg" />
+          <img src="../src/assets/bot.svg" alt="../src/assets/bot.svg" />
         </div>
         <div class="image-loader-container">
           <div class="image-loader"></div>
@@ -715,7 +767,7 @@ export default {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                messages: chatHistory,
+                userPrompt: userPrompt,
                 type: isImage ? "image" : "text",
                 activeConversation: activeConversation,
                 userId: userUid,
@@ -759,27 +811,35 @@ export default {
 
             chatHistory.push(receivedMessage);
 
-            // Update the conversation list item with the icon
-            const convIndex = conversations.findIndex(
-              (conv) => conv.id === activeConversation
-            );
-            if (convIndex >= 0) {
-              const listItem = document.getElementById(
-                `conversation-${activeConversation}`
+            if (activeConversation === null) {
+              const newConversation = {
+                id: generateUniqueId(),
+                messages: chatHistory,
+              };
+              activeConversation = newConversation.id;
+              conversations.push(newConversation);
+            } else {
+              // Update the conversation list item with the icon
+              const convIndex = conversations.findIndex(
+                (conv) => conv.id === activeConversation
               );
-              if (listItem) {
-                const textContent = listItem.querySelector(".text-content");
-                if (textContent) {
-                  textContent.textContent = userPrompt.content;
-                } else {
-                  listItem.innerHTML = `
+              if (convIndex >= 0) {
+                const listItem = document.getElementById(
+                  `conversation-${activeConversation}`
+                );
+                if (listItem) {
+                  const textContent = listItem.querySelector(".text-content");
+                  if (textContent) {
+                    textContent.textContent = userPrompt.content;
+                  } else {
+                    listItem.innerHTML = `
                 <i class="material-icons">chat_bubble_outline</i>
                 <span class="text-content">${userPrompt.content}</span>
               `;
+                  }
                 }
               }
             }
-
             document.getElementById("regenerate-response-btn").style.display =
               "block";
           } else {
