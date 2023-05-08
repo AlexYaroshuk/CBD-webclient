@@ -475,6 +475,11 @@ form {
     display: flex;
   }
 
+  .wrapper {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
   .header {
     width: 100%;
     padding: 8px;
