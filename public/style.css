@@ -53,7 +53,6 @@ a {
 }
 
 .chat {
-  min-width: 400px;
   max-width: 800px;
   margin: 0 auto;
   padding-top: 16px;
@@ -272,7 +271,6 @@ form img {
 }
 
 #chat-form {
-  min-width: 400px;
   max-width: 800px;
 
   width: 100%;
