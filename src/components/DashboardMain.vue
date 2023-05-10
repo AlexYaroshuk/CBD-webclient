@@ -62,6 +62,11 @@
             </div>
             <div id="image-tab" class="tab">
               <i class="material-icons">image</i>Image
+              <select id="image-options" style="display: none">
+                <option value="256x256">256x256</option>
+                <option value="512x512">512x512</option>
+                <option value="1024x1024">1024x1024</option>
+              </select>
             </div>
           </div>
         </div>
@@ -78,7 +83,7 @@
         </form>
         <div class="form-helper-text">
           <a href="https://github.com/AlexYaroshuk/CBD-webclient"
-            >chatCBD May 7 Version.</a
+            >chatCBD May 10 Version.</a
           >
           ChatCBD may produce inaccurate information about people, places, or
           facts.
@@ -110,6 +115,11 @@
       </div>
     </div>
   </div>
+  <div id="image-overlay">
+    <div class="image-overlay">
+      <img id="image-overlay-img" src="" alt="Full screen image" />
+    </div>
+  </div>
 </template>
 
 <script>
@@ -130,11 +140,13 @@ import { escape } from "lodash";
 
 export default {
   name: "DashboardMain",
-  /*   data() {
+
+  data() {
     return {
-      conversations: [],
+      fullScreenImageUrl: null,
     };
-  }, */
+  },
+
   props: {
     isLoggedIn: {
       type: Boolean,
@@ -149,6 +161,13 @@ export default {
   methods: {
     signOut() {
       this.$root.signOut();
+    },
+
+    openImageInFullScreen(url) {
+      this.fullScreenImageUrl = url;
+    },
+    closeFullScreenImage() {
+      this.fullScreenImageUrl = null;
     },
 
     handlePromptInput(shouldDisableButton) {
@@ -234,6 +253,20 @@ export default {
 
       const textTab = document.getElementById("text-tab");
       const imageTab = document.getElementById("image-tab");
+      const imageOptions = document.getElementById("image-options");
+      let selectedImageSize = "256x256";
+
+      imageOptions.addEventListener("change", () => {
+        selectedImageSize = imageOptions.value;
+      });
+
+      imageTab.addEventListener("click", () => {
+        isImage = true;
+        textTab.classList.remove("active");
+        imageTab.classList.add("active");
+        promptInput.placeholder = "Type your image description";
+        imageOptions.style.display = isImage ? "block" : "none";
+      });
 
       textTab.addEventListener("click", () => {
         isImage = false;
@@ -443,6 +476,56 @@ export default {
         return `id-${timestamp}-${hexadecimalString}`;
       }
 
+      document.addEventListener("DOMContentLoaded", () => {
+        const overlay = document.getElementById("image-overlay");
+        const overlayContent = document.getElementById("overlay-content");
+
+        // open overlay when image is clicked
+        document.addEventListener("click", function (e) {
+          if (e.target && e.target.classList.contains("clickable-image")) {
+            overlay.style.display = "block";
+            overlayContent.src = e.target.src;
+          }
+        });
+
+        // close overlay when close button is clicked
+        document.getElementsByClassName("close-overlay")[0].onclick =
+          function () {
+            overlay.style.display = "none";
+          };
+      });
+
+      const imageOverlay = document.getElementById("image-overlay");
+      imageOverlay.addEventListener("click", () => {
+        imageOverlay.style.display = "none";
+      });
+
+      window.openImageInFullScreen = function (imageUrl) {
+        const imageOverlay = document.getElementById("image-overlay");
+        const imageOverlayImg = document.getElementById("image-overlay-img");
+
+        // Set the source of the image in the overlay to the URL of the clicked image
+        imageOverlayImg.src = imageUrl;
+
+        // Show the overlay
+        imageOverlay.style.display = "flex";
+
+        // Add event listener for hiding the overlay when it's clicked
+        imageOverlay.addEventListener("click", () => {
+          imageOverlay.style.display = "none";
+        });
+      };
+
+      imageOverlay.style.display = "none"; // Hide the overlay
+
+      document
+        .getElementById("image-overlay")
+        .addEventListener("click", (event) => {
+          if (event.target.id === "image-overlay") {
+            document.getElementById("image-overlay").style.display = "none";
+          }
+        });
+
       function chatStripe(
         isAi,
         message,
@@ -467,30 +550,30 @@ export default {
         const content = hasImages
           ? message.images
               .map((imageUrl, index) => {
-                return `<div class="image-loader-container">
+                return `<div class="image-loader-container response-image-container">
   <div class="image-loader"></div>
-  <img class="response-image" id="response-image-${uniqueId}-${index}" src="" data-src="${imageUrl}" style="display:none;" width="256" height="256" />
+  <img class="response-image" id="response-image-${uniqueId}-${index}" src="" data-src="${imageUrl}" style="display:none;" width="256" height="256" onclick="openImageInFullScreen('${imageUrl}')" />
 </div>`;
               })
               .join("")
           : message.content;
 
         return `
-<div class="wrapper ${aiClass} ${listItemClass}">
-  <div class="chat">
-    <div class="profile">
-      <img
-        src=${isAi ? "/assets/bot.svg" : "/assets/user.svg"}
-        alt="${isAi ? "/assets/bot.svg" : "/assets/user.svg"}"
-      />
+    <div class="wrapper ${aiClass} ${listItemClass}">
+      <div class="chat">
+        <div class="profile">
+          <img
+            src=${isAi ? "/assets/bot.svg" : "/assets/user.svg"}
+            alt="${isAi ? "/assets/bot.svg" : "/assets/user.svg"}"
+          />
+        </div>
+        <div class="message ${errorClass}" id=${uniqueId}>${icon}${content}</div>
+        <div class="chat-controls">
+          <i class="material-icons copy-btn" data-id="${uniqueId}">content_copy</i>
+        </div>
+      </div>
     </div>
-    <div class="message ${errorClass}" id=${uniqueId}>${icon}${content}</div>
-    <div class="chat-controls">
-      <i class="material-icons copy-btn" data-id="${uniqueId}">content_copy</i>
-    </div>
-  </div>
-</div>
-`;
+  `;
       }
 
       function conversationListItem(value, uniqueId) {
@@ -505,9 +588,9 @@ export default {
       function generateImageElements(images) {
         return images
           .map((imageUrl, index) => {
-            return `<div class="image-loader-container">
+            return `<div class="image-loader-container response-image-container">
         <div class="image-loader"></div>
-        <img class="response-image" id="response-image-${index}" src="" data-src="${imageUrl}" style="display:none;" width="256" height="256" />
+        <img class="response-image" id="response-image-${index}" src="" data-src="${imageUrl}" style="display:none;" width="256" height="256" onclick="openImageInFullScreen('${imageUrl}')" />
       </div>`;
           })
           .join("");
@@ -594,6 +677,24 @@ export default {
           );
 
           chatContainer.insertAdjacentHTML("beforeend", messageElement);
+          if (isImage && message.images) {
+            message.images.forEach((imageUrl, index) => {
+              const imgElement = document.getElementById(
+                `response-image-${uniqueId}-${index}`
+              );
+              if (imgElement) {
+                imgElement.style.display = "block"; // Make sure the image is visible
+                imgElement.addEventListener("click", () => {
+                  imageOverlay.style.backgroundImage = `url(${imageUrl})`;
+                  imageOverlay.style.display = "block";
+                });
+              } else {
+                console.error(
+                  `Image element with ID response-image-${uniqueId}-${index} not found`
+                );
+              }
+            });
+          }
 
           // Add the event listeners after inserting the message element
           addCopyEventListeners();
@@ -631,7 +732,7 @@ export default {
         }
       }
 
-      function fetchWithTimeout(url, options, timeout = 35000) {
+      function fetchWithTimeout(url, options, timeout = 60000) {
         return Promise.race([
           fetch(url, options),
           new Promise((_, reject) =>
@@ -758,7 +859,7 @@ export default {
             loader(messageDiv);
           }
 
-          const FETCH_TIMEOUT = 35000;
+          const FETCH_TIMEOUT = 60000;
           document.getElementById("regenerate-response-btn").style.display =
             "none";
 
@@ -774,6 +875,7 @@ export default {
                 type: isImage ? "image" : "text",
                 activeConversation: activeConversation,
                 userId: userUid,
+                selectedImageSize: selectedImageSize,
               }),
             },
 
@@ -1011,6 +1113,23 @@ export default {
   left: 0;
 }
 
+.response-image-container {
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.response-image-container:hover::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+}
+
 #error-div {
   background-color: #f8d7da;
   color: #721c24;
@@ -1032,5 +1151,24 @@ export default {
 
 #retry-btn:hover {
   background-color: #0056b3;
+}
+
+.image-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.image-overlay img {
+  max-width: 90%;
+  max-height: 90%;
 }
 </style>

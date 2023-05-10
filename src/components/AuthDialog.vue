@@ -192,6 +192,12 @@ export default {
   z-index: 9999;
 }
 
+@media (max-width: 600px) {
+  h2 {
+    display: none;
+  }
+}
+
 #auth-form {
   display: flex;
   flex-direction: column;
