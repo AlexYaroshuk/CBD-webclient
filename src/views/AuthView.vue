@@ -1,7 +1,7 @@
 <template>
   <div class="about">
     Welcome to chatCBD alpha(0.2.2).
-    <h3>dev env</h3>
+
     <br />
     This service is currently in early development, so
     <span
