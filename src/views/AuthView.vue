@@ -1,6 +1,6 @@
 <template>
   <div class="about">
-    Welcome to chatCBD alpha(0.2.1).
+    Welcome to chatCBD alpha(0.2.2).
     <h3>dev env</h3>
     <br />
     This service is currently in early development, so
@@ -18,16 +18,16 @@
       chatCBD
     </div>
 
-    <div
-      class="latest-changes"
-      style="
-        display: flex;
-        flex-direction: column;
-        width: fit-content;
-        text-align: left;
-        margin: 0 auto;
-      "
-    >
+    <AuthDialog />
+    <div class="latest-changes">
+      <h3>Latest changes (May 14th)</h3>
+      <br />
+
+      <p>
+        -Added Stable Diffusion image generation support (size fixed at 512x512
+        for now)
+      </p>
+      <br />
       <h3>Latest changes (May 10th)</h3>
       <br />
 
@@ -39,8 +39,6 @@
         -Added this Latest changes section so you see the latest changes 🗒️🤟🚀
       </p>
     </div>
-
-    <AuthDialog />
   </div>
 </template>
 <script>
@@ -64,6 +62,8 @@ export default {
   width: fit-content;
   text-align: left;
   margin: 0 auto;
+  margin-top: 4rem;
+  padding: 1rem;
 }
 @media (max-width: 600px) {
   .latest-changes h3 {

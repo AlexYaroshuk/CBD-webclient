@@ -6,7 +6,7 @@
       <router-link v-if="isLoggedIn" to="/dashboard">Dashboard</router-link>
     </nav> -->
 
-    <AuthDialog v-if="!isLoggedIn" @auth-success="handleAuthSuccess" />
+    <!-- <AuthDialog v-if="!isLoggedIn" @auth-success="handleAuthSuccess" /> -->
     <router-view :isLoggedIn="isLoggedIn" @logout-success="handleLogout" />
   </div>
 </template>

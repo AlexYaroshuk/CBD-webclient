@@ -183,13 +183,13 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.1);
-  position: fixed;
+  /*   width: 100%;
+  height: 100vh; */
+  /*  background-color: rgba(0, 0, 0, 0.1); */
+  /*   position: fixed;
   top: 0;
   left: 0;
-  z-index: 9999;
+  z-index: 9999; */
 }
 
 @media (max-width: 600px) {

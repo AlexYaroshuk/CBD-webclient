@@ -67,6 +67,10 @@
                 <option value="512x512">512x512</option>
                 <option value="1024x1024">1024x1024</option>
               </select>
+              <select id="image-provider" style="display: none">
+                <option value="DALL-E">DALL-E</option>
+                <option value="Stable Diffusion">Stable Diffusion</option>
+              </select>
             </div>
           </div>
         </div>
@@ -83,7 +87,7 @@
         </form>
         <div class="form-helper-text">
           <a href="https://github.com/AlexYaroshuk/CBD-webclient"
-            >chatCBD May 10 Version.</a
+            >chatCBD May 14 Version.</a
           >
           ChatCBD may produce inaccurate information about people, places, or
           facts.
@@ -254,10 +258,23 @@ export default {
       const textTab = document.getElementById("text-tab");
       const imageTab = document.getElementById("image-tab");
       const imageOptions = document.getElementById("image-options");
+      const imageProvider = document.getElementById("image-provider");
       let selectedImageSize = "256x256";
+      let selectedImageProvider = "DALL-E";
 
       imageOptions.addEventListener("change", () => {
         selectedImageSize = imageOptions.value;
+      });
+      imageProvider.addEventListener("change", () => {
+        selectedImageProvider = imageProvider.value;
+
+        if (selectedImageProvider === "Stable Diffusion") {
+          selectedImageSize = "512x512";
+          imageOptions.value = "512x512";
+          imageOptions.disabled = true;
+        } else {
+          imageOptions.disabled = false;
+        }
       });
 
       imageTab.addEventListener("click", () => {
@@ -266,6 +283,7 @@ export default {
         imageTab.classList.add("active");
         promptInput.placeholder = "Type your image description";
         imageOptions.style.display = isImage ? "block" : "none";
+        imageProvider.style.display = isImage ? "block" : "none";
       });
 
       textTab.addEventListener("click", () => {
@@ -876,6 +894,7 @@ export default {
                 activeConversation: activeConversation,
                 userId: userUid,
                 selectedImageSize: selectedImageSize,
+                selectedImageProvider: selectedImageProvider,
               }),
             },
 
