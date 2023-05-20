@@ -101,10 +101,12 @@
     <div id="confirmation-modal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>Clear History</h3>
+          <h3 id="modal-title">Clear History</h3>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to delete all conversations?</p>
+          <p id="modal-body-text">
+            Are you sure you want to delete all conversations?
+          </p>
         </div>
         <div class="modal-footer">
           <button
@@ -113,7 +115,6 @@
           >
             Delete all conversations
           </button>
-
           <button id="cancel-clear-history" class="modal-button">Cancel</button>
         </div>
       </div>
@@ -132,7 +133,7 @@ import {
   doc,
   onSnapshot,
   query,
-  setDoc,
+  deleteDoc,
   getDocs,
   writeBatch,
 } from "firebase/firestore";
@@ -204,6 +205,10 @@ export default {
         "cancel-clear-history"
       );
 
+      let modalTitle = document.getElementById("modal-title");
+      let modalBodyText = document.getElementById("modal-body-text");
+      let modalConfirmButton = document.getElementById("confirm-clear-history");
+
       const chatContainer = document.querySelector("#chat_container");
       const startMessage = document.getElementById("start-message");
       const drawerBtn = document.getElementById("drawer-btn");
@@ -254,6 +259,24 @@ export default {
       let loadInterval;
 
       let isImage = false;
+      let confirmationModalMode = null;
+      let deletionCandidateId = null;
+
+      let confirmationModalHeader = document.querySelector(".modal-header h3");
+      let confirmationModalBody = document.querySelector(".modal-body p");
+
+      // Change the text content depending on the modal type
+      if (confirmationModalMode === "deleteConversation") {
+        confirmationModalHeader.textContent = "Delete Conversation";
+        confirmationModalBody.textContent =
+          "Are you sure you want to delete this conversation?";
+        confirmClearHistoryBtn.textContent = "Delete conversation";
+      } else if (confirmationModalMode === "clearHistory") {
+        confirmationModalHeader.textContent = "Clear History";
+        confirmationModalBody.textContent =
+          "Are you sure you want to delete all conversations?";
+        confirmClearHistoryBtn.textContent = "Delete all conversations";
+      }
 
       const textTab = document.getElementById("text-tab");
       const imageTab = document.getElementById("image-tab");
@@ -442,6 +465,7 @@ export default {
           });
 
           renderConversationList();
+          attachDeleteListeners();
           addConversationClickEventListeners();
           setActiveConversationStyle(activeConversation);
           loadActiveConversation();
@@ -596,12 +620,79 @@ export default {
 
       function conversationListItem(value, uniqueId) {
         return `
-    <div class="conversation-list-item" id=${uniqueId}>
-      <i class="material-icons">chat_bubble_outline</i>
-      ${value}
-    </div>
-  `;
+<div class="conversation-list-item" id=${uniqueId}>
+  <i class="material-icons">chat_bubble_outline</i>
+  ${value}
+  <i
+    class="material-icons delete-icon"
+    id="delete-icon-${uniqueId}"
+    v-if="isActiveConversation(conversation)"
+    >delete</i
+  >
+</div>
+`;
       }
+
+      function attachDeleteListeners() {
+        document.querySelectorAll(".delete-icon").forEach((icon) => {
+          icon.addEventListener("click", (event) => {
+            event.stopPropagation();
+            const conversationId = icon.parentNode.id;
+            deletionCandidateId = conversationId;
+            confirmationModalMode = "deleteConversation";
+
+            // Update modal texts
+            modalTitle.innerText = "Delete Conversation";
+            modalBodyText.innerText =
+              "Are you sure you want to delete this conversation?";
+            modalConfirmButton.innerText = "Delete this conversation";
+
+            confirmationModal.style.display = "block";
+          });
+        });
+      }
+
+      confirmClearHistoryBtn.addEventListener("click", async () => {
+        if (confirmationModalMode === "deleteAll") {
+          // Delete all documents in the user's conversations collection
+          const userUid = auth.currentUser.uid;
+          const conversationsRef = collection(
+            database,
+            `users/${userUid}/conversations`
+          );
+          const querySnapshot = await getDocs(conversationsRef);
+          const batch = writeBatch(database);
+          querySnapshot.forEach((doc) => {
+            batch.delete(doc.ref);
+          });
+          await batch.commit();
+
+          // Reset the conversations array, activeConversation, and chatHistory
+          conversations = [];
+          activeConversation = null;
+          chatHistory = [];
+          // Re-render the conversation list
+          renderConversationList();
+          attachDeleteListeners();
+
+          // Update the chat history if necessary
+          if (activeConversation) {
+            setActiveConversationStyle(activeConversation);
+          } else {
+            chatContainer.innerHTML = "";
+            updateStartMessageDisplay();
+          }
+        } else if (confirmationModalMode === "deleteConversation") {
+          await deleteConversation(deletionCandidateId);
+        }
+        // Reset the modal back to the default 'deleteAll' mode
+        modalTitle.innerText = "Clear History";
+        modalBodyText.innerText =
+          "Are you sure you want to delete all conversations?";
+        modalConfirmButton.innerText = "Delete all conversations";
+        confirmationModal.style.display = "none";
+        confirmationModalMode = "deleteAll";
+      });
 
       function generateImageElements(images) {
         return images
@@ -826,6 +917,7 @@ export default {
           localStorage.setItem("activeConversation", activeConversation); // Set activeConversation in local storage
           updateStartMessageDisplay();
           renderConversationList();
+          attachDeleteListeners();
         }
 
         // Create a new message element
@@ -987,7 +1079,7 @@ export default {
           const errorMessage =
             error.message === "Request timed out"
               ? "Request timed out. Please try again."
-              : "An error #1 occurred. Please try again.";
+              : "Something went wrong, please try again.";
           messageDiv.innerHTML = errorMessage;
           messageDiv.classList.add("error"); // Add the 'error' class to the message
 
@@ -1013,42 +1105,47 @@ export default {
       form.onsubmit = handleSubmit;
 
       clearHistoryBtn.addEventListener("click", () => {
+        confirmationModalMode = "deleteAll";
         confirmationModal.style.display = "block";
       });
 
-      confirmClearHistoryBtn.addEventListener("click", async () => {
-        const userUid = auth.currentUser.uid;
-        const conversationsRef = collection(
-          database,
-          `users/${userUid}/conversations`
-        );
-
-        // Delete all documents in the user's conversations collection
-        const querySnapshot = await getDocs(conversationsRef);
-        const batch = writeBatch(database);
-        querySnapshot.forEach((doc) => {
-          batch.delete(doc.ref);
-        });
-        await batch.commit();
-
-        // Reset the conversations array, activeConversation, and chatHistory
-        conversations = [];
-        activeConversation = null;
-        chatHistory = [];
-
-        // Update the UI
-        localStorage.removeItem("conversations");
-        chatContainer.innerHTML = "";
-        renderConversationList();
-        updateStartMessageDisplay();
-
-        // Close the confirmation modal
-        confirmationModal.style.display = "none";
-      });
-
       cancelClearHistoryBtn.addEventListener("click", () => {
+        confirmationModalMode = null;
+        deletionCandidateId = null;
         confirmationModal.style.display = "none";
       });
+
+      //delete specific conv
+
+      async function deleteConversation(id) {
+        const userUid = auth.currentUser.uid;
+        const docRef = doc(database, `users/${userUid}/conversations/${id}`);
+        await deleteDoc(docRef);
+        // Remove the conversation from the local 'conversations' array
+        const index = conversations.findIndex(
+          (conversation) => conversation.id === id
+        );
+        if (index > -1) {
+          conversations.splice(index, 1);
+        }
+
+        // If the deleted conversation was the active one, clear 'activeConversation'
+        if (activeConversation === id) {
+          activeConversation = null;
+        }
+
+        // Re-render the conversation list
+        renderConversationList();
+        attachDeleteListeners();
+
+        // Update the chat history if necessary
+        if (activeConversation) {
+          setActiveConversationStyle(activeConversation);
+        } else {
+          chatContainer.innerHTML = "";
+          updateStartMessageDisplay();
+        }
+      }
 
       updateStartMessageDisplay();
       setActiveConversationStyle(activeConversation);
@@ -1189,5 +1286,33 @@ export default {
 .image-overlay img {
   max-width: 90%;
   max-height: 90%;
+}
+
+/* Width */
+.conversation-list-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+/* Track */
+.conversation-list-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Handle */
+.conversation-list-wrapper::-webkit-scrollbar-thumb {
+  background: #888;
+}
+
+/* Handle on hover */
+.conversation-list-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.delete-icon {
+  display: none;
+}
+
+.conversation-list-item.active .delete-icon {
+  display: inline-block;
 }
 </style>

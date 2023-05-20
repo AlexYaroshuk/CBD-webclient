@@ -33,7 +33,6 @@ a {
   gap: 10px;
 
   -ms-overflow-style: none;
-  scrollbar-width: none;
 
   padding-bottom: 64px;
   scroll-behavior: smooth;
@@ -171,7 +170,7 @@ form img {
   left: 0;
   top: 0;
   bottom: 0;
-
+  scrollbar-width: thin;
   height: calc(100% - 90px);
   overflow-y: auto;
 
@@ -215,10 +214,10 @@ form img {
   background-color: #40414f;
 }
 
-/* .conversation-list-wrapper {
+.conversation-list-wrapper {
   flex: 1;
   overflow-y: auto;
-} */
+}
 
 .header {
   position: relative;
@@ -259,7 +258,7 @@ form img {
   height: auto;
   display: flex;
   flex-direction: column;
-  z-index: 100;
+  z-index: 1;
 }
 
 .mainview {
@@ -294,23 +293,27 @@ form img {
   margin: 15% auto;
   padding: 20px;
   border: 1px solid #888;
-  width: 50%;
+  width: 25%;
   background-color: #353740;
   border-radius: 4px;
 }
 
 .modal-header {
   font-weight: bold;
+  width: auto;
+  display: flex;
 }
 
 .modal-body {
+  width: auto;
+  display: flex;
   margin-top: 20px;
   margin-bottom: 20px;
 }
 
 .modal-footer {
+  width: auto;
   display: flex;
-  justify-content: flex-start;
 }
 
 .modal-button {
@@ -352,7 +355,6 @@ form img {
 }
 
 .clear-chat-history-wrapper {
-  position: absolute;
   bottom: 0;
   margin-bottom: 16px;
 
