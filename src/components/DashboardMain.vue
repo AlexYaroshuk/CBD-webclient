@@ -87,7 +87,7 @@
         </form>
         <div class="form-helper-text">
           <a href="https://github.com/AlexYaroshuk/CBD-webclient"
-            >chatCBD May 14 Version.</a
+            >chatCBD May 20 Version.</a
           >
           ChatCBD may produce inaccurate information about people, places, or
           facts.
@@ -974,7 +974,7 @@ export default {
             "none";
 
           const response = await fetchWithTimeout(
-            "https://chat-cbd-server-test.onrender.com/send-message",
+            "https://chat-cbd.onrender.com/send-message",
             {
               method: "POST",
               headers: {
