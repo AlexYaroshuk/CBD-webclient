@@ -1,6 +1,6 @@
 <template>
   <div class="about">
-    Welcome to chatCBD alpha(0.2.2).
+    Welcome to chatCBD alpha(0.2.3).
 
     <br />
     This service is currently in early development, so
@@ -11,8 +11,9 @@
         text-decoration: underline;
         font-size: large;
       "
-      >get ready for bugs</span
-    >.
+      >get ready for bugs.</span
+    >
+    <!-- <p>dev env</p> -->
 
     <div style="margin-top: 4rem" id="start-message" class="start-message">
       chatCBD
@@ -20,6 +21,12 @@
 
     <AuthDialog />
     <div class="latest-changes">
+      <h3>Latest changes (May 20th)</h3>
+      <br />
+
+      <p>-added ability to delete a single conversation</p>
+      <p>-UI fixes</p>
+      <br />
       <h3>Latest changes (May 14th)</h3>
       <br />
 
