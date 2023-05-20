@@ -1115,6 +1115,12 @@ export default {
         confirmationModal.style.display = "none";
       });
 
+      confirmationModal.addEventListener("click", () => {
+        confirmationModalMode = null;
+        deletionCandidateId = null;
+        confirmationModal.style.display = "none";
+      });
+
       //delete specific conv
 
       async function deleteConversation(id) {
