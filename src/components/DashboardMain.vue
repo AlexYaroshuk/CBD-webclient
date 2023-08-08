@@ -882,7 +882,7 @@ export default {
             "none";
 
           const response = await fetchWithTimeout(
-            "https://chat-cbd-server-test.onrender.com",
+            "https://chat-cbd-server-test2.onrender.com",
             {
               method: "POST",
               headers: {
